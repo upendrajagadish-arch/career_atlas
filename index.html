@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Career Atlas · Interactive Mind Map</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%235b74f6'/%3E%3Ccircle cx='7' cy='12' r='2.5' fill='white'/%3E%3Ccircle cx='17' cy='7' r='2' fill='white'/%3E%3Ccircle cx='17' cy='17' r='2' fill='white'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/atlas.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="3"/><circle cx="19" cy="5" r="2.5"/><circle cx="19" cy="12" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M8 12h4m0 0c2 0 2-7 4.5-7M12 12h4.5M12 12c2 0 2 7 4.5 7"/></svg>
+      </div>
+      <div class="brand-text"><b>Career Atlas</b><small>Fresher hiring mind map · 2026</small></div>
+    </div>
+
+    <div class="search" id="searchWrap">
+      <svg class="search-ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="search" type="search" placeholder="Search companies, roles, skills, openings, lectures…  ( / )" autocomplete="off" spellcheck="false">
+      <div class="results" id="results" role="listbox"></div>
+    </div>
+
+    <div class="top-actions">
+      <button class="icon-btn" id="btnJobs" title="Today's fresher openings, hiring drives and events — refreshed daily">
+        <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg><span>Jobs &amp; events</span><b class="badge" id="jobsBadge" hidden></b>
+      </button>
+      <button class="icon-btn accent" id="btnResume" title="Resume studio: ATS-proven template, tailor one or many resumes to a role and job description with the Resume Agent">
+        <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/><path d="M18.5 1.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/></svg><span>Resume studio</span>
+      </button>
+      <button class="icon-btn accent" id="btnBuild" title="Select skills and build one combined 80-hour timetable with calendar dates">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg><span>Timetable builder</span>
+      </button>
+      <button class="icon-btn" id="btnCollapse" title="Collapse everything back to the main branches">
+        <svg viewBox="0 0 24 24"><path d="M4 12h16M8 7l4 5-4 5M16 7l-4 5 4 5"/></svg><span>Collapse all</span>
+      </button>
+      <button class="icon-btn toggle" id="btnFocus" title="Focus mode: opening a branch closes its siblings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg><span>Focus mode</span>
+      </button>
+      <button class="icon-btn" id="btnTheme" title="Toggle light / dark theme">
+        <svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+      </button>
+      <button class="icon-btn toggle on" id="btnPanel" title="Show / hide the notes panel">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <svg id="map" aria-label="Career mind map">
+      <g id="viewport"><g id="edges"></g><g id="nodes"></g></g>
+    </svg>
+
+    <div class="hint" id="hint">
+      <b>Click</b> a node to open it · <b>Drag</b> to pan · <b>Scroll</b> to zoom · <b>Arrow keys</b> to walk the map
+    </div>
+
+    <div class="zoom">
+      <button id="zIn" title="Zoom in (+)"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button>
+      <button id="zOut" title="Zoom out (−)"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+      <button id="zFit" title="Fit map to screen (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button id="zSel" title="Center on selected node (C)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg></button>
+    </div>
+
+    <div class="loader" id="loader"><div class="spinner"></div><p>Loading career data…</p></div>
+  </main>
+
+  <aside class="panel" id="panel" aria-live="polite"></aside>
+</div>
+<div class="modal" id="planModal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mTitle"></div></div>
+<div class="modal" id="builderModal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bTitleH"></div></div>
+<div class="modal" id="jobsModal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="jTitle"></div></div>
+<div class="modal" id="resumeModal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="rsTitle"></div><input type="file" id="rsFile" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" multiple hidden></div>
+<script src="assets/curriculum/skills-languages.js"></script>
+<script src="assets/curriculum/skills-web.js"></script>
+<script src="assets/curriculum/skills-data-cloud.js"></script>
+<script src="assets/curriculum/skills-cs-ai.js"></script>
+<script src="assets/curriculum/roles-engineering.js"></script>
+<script src="assets/curriculum/roles-data-product.js"></script>
+<script src="assets/curriculum/roles-platforms.js"></script>
+<script src="assets/atlas.js"></script>
+<script src="assets/builder.js"></script>
+<script src="assets/jobs.js"></script>
+<script src="assets/resume-lexicon.js"></script>
+<script src="assets/resume-engine.js"></script>
+<script src="assets/resume.js"></script>
+</body>
+</html>

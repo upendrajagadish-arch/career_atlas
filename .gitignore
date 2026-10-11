@@ -1,0 +1,10 @@
+# Local API keys for the job aggregators (Adzuna, Jooble)
+scripts/config.json
+
+# Updater logs and debug output
+data/update.log
+data/*-run.txt
+
+node_modules/
+.DS_Store
+Thumbs.db

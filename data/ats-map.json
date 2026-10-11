@@ -1,0 +1,665 @@
+{
+ "generatedAt": "2026-10-11T14:27:31.061Z",
+ "boards": {
+  "adp": [],
+  "adlift": [],
+  "abb": [],
+  "airbus": [],
+  "adonmo": [],
+  "6sense": [
+   {
+    "ats": "greenhouse",
+    "slug": "6sense",
+    "india": 12,
+    "total": 29
+   }
+  ],
+  "airbnb": [
+   {
+    "ats": "greenhouse",
+    "slug": "airbnb",
+    "india": 6,
+    "total": 161
+   }
+  ],
+  "abcconsultants": [],
+  "amd": [],
+  "8views": [],
+  "anz": [],
+  "apna": [
+   {
+    "ats": "workable",
+    "slug": "apna",
+    "india": 115,
+    "total": 143
+   }
+  ],
+  "adeccoindia": [],
+  "apple": [],
+  "agnikulcosmos": [],
+  "arcesium": [],
+  "alstom": [],
+  "aganithaai": [],
+  "arm": [],
+  "allegisgroup": [],
+  "atlan": [],
+  "atlassian": [],
+  "americanairlines": [],
+  "arcadia": [],
+  "atos": [],
+  "americanexpress": [],
+  "allianztechnology": [],
+  "bigbasket": [],
+  "bharatpe": [],
+  "bhanzu": [],
+  "bayer": [],
+  "birlasoft": [],
+  "astrazenecatechnologyseegcc": [],
+  "aspiresystems": [],
+  "bny": [],
+  "atherenergy": [],
+  "bookingcom": [],
+  "botsync": [],
+  "bahwancybertek": [],
+  "bankofamerica": [],
+  "brandshark": [],
+  "brandingnuts": [],
+  "brandstory": [],
+  "bellatrixaerospace": [],
+  "brightchamps": [],
+  "browserstack": [],
+  "callhealth": [],
+  "capgemini": [],
+  "caratlane": [],
+  "blackbox": [],
+  "bnpparibasindiasolutions": [],
+  "cgi": [],
+  "chargebee": [],
+  "clevertap": [],
+  "clickfused": [],
+  "cognizant": [],
+  "collabera": [],
+  "caresoftglobal": [],
+  "continental": [
+   {
+    "ats": "smartrecruiters",
+    "slug": "continental",
+    "india": 9,
+    "total": 11
+   }
+  ],
+  "ceslimited": [],
+  "cred": [
+   {
+    "ats": "lever",
+    "slug": "cred",
+    "india": 8,
+    "total": 8
+   }
+  ],
+  "credright": [],
+  "cashfreepayments": [],
+  "charlesschwab": [],
+  "cultfit": [],
+  "culturemonkey": [],
+  "cielhr": [],
+  "customfitai": [],
+  "buzzworksbusinessservices": [],
+  "cloverinfotech": [],
+  "cyient": [],
+  "cutshort": [],
+  "dailyhunt": [],
+  "darwinbox": [],
+  "collinsaerospace": [],
+  "deloitte": [],
+  "databricks": [
+   {
+    "ats": "greenhouse",
+    "slug": "databricks",
+    "india": 91,
+    "total": 892
+   }
+  ],
+  "dunzo": [],
+  "ctrlsdatacenters": [],
+  "disprz": [],
+  "dhruvaspace": [],
+  "ekincare": [],
+  "banyannation": [],
+  "deccanai": [],
+  "dentsuindia": [],
+  "detecttechnologies": [],
+  "delltechnologies": [],
+  "daimlerindiacommercialvehicles": [],
+  "empower": [],
+  "enmovil": [],
+  "epsilon": [],
+  "elililly": [],
+  "echovmedigital": [],
+  "experis": [],
+  "everstage": [],
+  "ey": [],
+  "digitalrank": [],
+  "factset": [],
+  "emblixsolutions": [],
+  "epamsystems": [],
+  "fieldproxy": [],
+  "facilio": [],
+  "digitalseo": [],
+  "flex": [],
+  "flipkart": [],
+  "fourkites": [
+   {
+    "ats": "greenhouse",
+    "slug": "fourkites",
+    "india": 6,
+    "total": 12
+   }
+  ],
+  "freshworks": [
+   {
+    "ats": "smartrecruiters",
+    "slug": "freshworks",
+    "india": 34,
+    "total": 34
+   }
+  ],
+  "fyle": [],
+  "ericsson": [],
+  "expleo": [],
+  "galaxeye": [],
+  "gale": [],
+  "geekschip": [],
+  "fimoney": [],
+  "fordindiatechnologycenter": [],
+  "genpact": [],
+  "globant": [],
+  "equalidentity": [],
+  "glance": [
+   {
+    "ats": "greenhouse",
+    "slug": "glance",
+    "india": 20,
+    "total": 36
+   }
+  ],
+  "fullcreative": [
+   {
+    "ats": "recruitee",
+    "slug": "fullcreative",
+    "india": 8,
+    "total": 8
+   }
+  ],
+  "gofrugal": [],
+  "fidelityinternational": [],
+  "google": [],
+  "graphy": [],
+  "freyrenergy": [],
+  "groww": [
+   {
+    "ats": "greenhouse",
+    "slug": "groww",
+    "india": 8,
+    "total": 9
+   }
+  ],
+  "garudaaerospace": [],
+  "hasura": [],
+  "hcltech": [],
+  "haptik": [],
+  "healthify": [],
+  "hexaware": [],
+  "goldmansachs": [],
+  "gradioustechnologies": [],
+  "highradius": [
+   {
+    "ats": "greenhouse",
+    "slug": "highradius",
+    "india": 52,
+    "total": 78
+   }
+  ],
+  "honeywell": [],
+  "hsbc": [],
+  "hylenr": [],
+  "ibm": [],
+  "handigital": [],
+  "growthhackersdigital": [],
+  "halamobility": [],
+  "hevodata": [
+   {
+    "ats": "lever",
+    "slug": "hevodata",
+    "india": 50,
+    "total": 52
+   }
+  ],
+  "hakunamatatasolutions": [],
+  "imimobile": [],
+  "indrajaal": [],
+  "infinix": [],
+  "hippovideo": [],
+  "infosys": [],
+  "hitachienergy": [],
+  "inmobi": [
+   {
+    "ats": "greenhouse",
+    "slug": "inmobi",
+    "india": 37,
+    "total": 72
+   }
+  ],
+  "inovies": [],
+  "innovaccer": [],
+  "innominds": [],
+  "instamojo": [],
+  "hyundaimobis": [],
+  "ibmconsulting": [],
+  "invideo": [],
+  "indiumsoftware": [],
+  "iprospect": [],
+  "hyundaimotorindiaengineering": [],
+  "jar": [],
+  "intuit": [],
+  "infinitylearn": [],
+  "ingrammicro": [],
+  "jupiter": [],
+  "juspay": [],
+  "keka": [],
+  "kaleris": [],
+  "jehaerospace": [],
+  "kaleidofin": [],
+  "intellectdesignarena": [],
+  "kissflow": [],
+  "kla": [],
+  "klenty": [],
+  "kovaico": [
+   {
+    "ats": "smartrecruiters",
+    "slug": "kovaico",
+    "india": 4,
+    "total": 4
+   }
+  ],
+  "kpmg": [],
+  "krutrim": [],
+  "istudiotechnologies": [],
+  "johndeere": [],
+  "landeed": [],
+  "langoor": [],
+  "kaartechnologies": [],
+  "kfintechnologies": [],
+  "leadsquared": [],
+  "lennox": [],
+  "licious": [],
+  "linkedin": [
+   {
+    "ats": "lever",
+    "slug": "linkedin",
+    "india": 14,
+    "total": 23
+   }
+  ],
+  "ltimindtree": [],
+  "kpittechnologies": [],
+  "kraionyxai": [],
+  "kukufm": [],
+  "lamresearch": [],
+  "magnit": [],
+  "latentviewanalytics": [],
+  "matrimonycom": [],
+  "mediatek": [],
+  "lennoxindiatechnologycentre": [],
+  "mcsaatchiperformance": [],
+  "m2pfintech": [],
+  "medibuddy": [],
+  "larsentoubro": [],
+  "lwydinteractive": [],
+  "meesho": [
+   {
+    "ats": "lever",
+    "slug": "meesho",
+    "india": 57,
+    "total": 59
+   }
+  ],
+  "lynklogistics": [],
+  "merkle": [],
+  "meta": [],
+  "mindtickle": [
+   {
+    "ats": "lever",
+    "slug": "mindtickle",
+    "india": 19,
+    "total": 20
+   },
+   {
+    "ats": "smartrecruiters",
+    "slug": "mindtickle",
+    "india": 9,
+    "total": 9
+   }
+  ],
+  "moengage": [],
+  "mizuho": [],
+  "makershive": [],
+  "moglix": [],
+  "marutdrones": [],
+  "motive": [],
+  "mphasis": [],
+  "mygate": [],
+  "myntra": [],
+  "navi": [],
+  "nephroplus": [],
+  "netapp": [],
+  "ninjacart": [],
+  "niramai": [],
+  "niyo": [],
+  "nobroker": [],
+  "nokia": [],
+  "ncrvoyix": [],
+  "mercedesbenzresearchanddevelopmentindia": [],
+  "nutanix": [],
+  "nxtwave": [],
+  "observeai": [
+   {
+    "ats": "greenhouse",
+    "slug": "observeai",
+    "india": 5,
+    "total": 10
+   }
+  ],
+  "nammayatri": [],
+  "natwestgroup": [],
+  "ola": [],
+  "nttdata": [],
+  "netcorecloud": [],
+  "nexoraaai": [],
+  "pando": [],
+  "paperflite": [],
+  "pepsico": [],
+  "performics": [],
+  "olaelectric": [],
+  "phonepe": [],
+  "pixelvide": [],
+  "pixxel": [],
+  "portcast": [
+   {
+    "ats": "lever",
+    "slug": "portcast",
+    "india": 9,
+    "total": 11
+   }
+  ],
+  "pidatacenters": [],
+  "porter": [],
+  "postman": [],
+  "persistentsystems": [],
+  "openfinancialtechnologies": [],
+  "peppercloud": [],
+  "practo": [],
+  "pinelabs": [],
+  "pratilipi": [],
+  "proclink": [],
+  "planystechnologies": [],
+  "pocketfm": [
+   {
+    "ats": "lever",
+    "slug": "pocketfm",
+    "india": 2,
+    "total": 11
+   }
+  ],
+  "prodapt": [],
+  "proglite": [],
+  "orangedigitalmarketing": [],
+  "optisolbusinesssolutions": [],
+  "qualitest": [],
+  "questbook": [],
+  "rankraze": [],
+  "pranathisoftwareservices": [],
+  "rapido": [],
+  "publicissapient": [],
+  "razorpay": [],
+  "publicisgroupe": [],
+  "recykal": [],
+  "pureev": [],
+  "questglobal": [],
+  "quantumenergy": [],
+  "quesscorp": [],
+  "randstadindia": [],
+  "ramcosystems": [],
+  "redhealth": [],
+  "rocketlane": [],
+  "saksoft": [],
+  "sanmina": [],
+  "sap": [],
+  "rapteeenergy": [],
+  "reclaimprotocol": [],
+  "scapia": [],
+  "schaeffler": [],
+  "schbang": [],
+  "securden": [],
+  "sellerapp": [],
+  "sharechat": [],
+  "shootorder": [],
+  "retailsols": [],
+  "siemens": [],
+  "saplabs": [],
+  "renaultnissantechnologybusinesscentre": [],
+  "sarvamai": [
+   {
+    "ats": "ashby",
+    "slug": "sarvam",
+    "india": 41,
+    "total": 41
+   }
+  ],
+  "signoz": [],
+  "simplilearn": [],
+  "saaslabs": [],
+  "sisa": [],
+  "samsungrd": [],
+  "schneiderelectric": [],
+  "slice": [],
+  "smallcase": [],
+  "snowflake": [
+   {
+    "ats": "ashby",
+    "slug": "snowflake",
+    "india": 12,
+    "total": 358
+   }
+  ],
+  "sidsfarm": [],
+  "sparrowdesk": [],
+  "spicenet": [],
+  "skyrootaerospace": [],
+  "slksoftware": [],
+  "socialbeat": [],
+  "socitgnrale": [],
+  "solitontechnologies": [],
+  "sonatasoftware": [],
+  "superopsai": [],
+  "surveysparrow": [],
+  "smartdatasolutions": [],
+  "southwestairlines": [],
+  "soprasteria": [],
+  "sutherland": [
+   {
+    "ats": "smartrecruiters",
+    "slug": "sutherland",
+    "india": 51,
+    "total": 52
+   }
+  ],
+  "socitgnraleglobalsolutioncentre": [],
+  "tavant": [],
+  "swiggy": [
+   {
+    "ats": "smartrecruiters",
+    "slug": "swiggy",
+    "india": 132,
+    "total": 173
+   }
+  ],
+  "teamlease": [],
+  "teceze": [],
+  "techmagnate": [
+   {
+    "ats": "smartrecruiters",
+    "slug": "techmagnate",
+    "india": 9,
+    "total": 9
+   }
+  ],
+  "standardchartered": [],
+  "techwave": [],
+  "standardcharteredgbs": [],
+  "tcs": [],
+  "tekion": [
+   {
+    "ats": "ashby",
+    "slug": "tekion",
+    "india": 76,
+    "total": 98
+   }
+  ],
+  "tenable": [],
+  "teleperformance": [],
+  "swissre": [],
+  "thoughtworks": [
+   {
+    "ats": "greenhouse",
+    "slug": "thoughtworks",
+    "india": 3,
+    "total": 37
+   }
+  ],
+  "tripledart": [],
+  "uber": [],
+  "ubs": [],
+  "udaan": [],
+  "tempestadvertising": [],
+  "techclouderp": [],
+  "techmahindra": [],
+  "tescobengaluru": [],
+  "tvsmotor": [],
+  "texasinstruments": [],
+  "thegotoguy": [],
+  "unacademy": [
+   {
+    "ats": "smartrecruiters",
+    "slug": "unacademy",
+    "india": 3,
+    "total": 3
+   }
+  ],
+  "uniphore": [],
+  "thingzosmart": [],
+  "urbankisaan": [],
+  "valeo": [],
+  "ust": [],
+  "valuelabs": [
+   {
+    "ats": "smartrecruiters",
+    "slug": "valuelabs",
+    "india": 1,
+    "total": 1
+   }
+  ],
+  "virtusa": [],
+  "viatris": [],
+  "visa": [],
+  "torryharrisintegrationsolutions": [],
+  "visteon": [],
+  "vedantu": [],
+  "vml": [],
+  "wakefit": [],
+  "way2news": [],
+  "urbancompany": [],
+  "waycool": [],
+  "wayfair": [],
+  "webchutney": [],
+  "webengage": [],
+  "veetechnologies": [],
+  "webenza": [],
+  "weboin": [],
+  "weekday": [
+   {
+    "ats": "recruitee",
+    "slug": "weekday",
+    "india": 1,
+    "total": 1
+   }
+  ],
+  "wehouse": [],
+  "weekdayclientrole": [
+   {
+    "ats": "recruitee",
+    "slug": "weekday",
+    "india": 1,
+    "total": 1
+   }
+  ],
+  "vivifiindia": [],
+  "whatfix": [],
+  "volvogroup": [],
+  "veevasystems": [
+   {
+    "ats": "lever",
+    "slug": "veeva",
+    "india": 35,
+    "total": 938
+   }
+  ],
+  "wipro": [],
+  "yellowai": [],
+  "yubi": [],
+  "zaggle": [],
+  "zenoti": [
+   {
+    "ats": "greenhouse",
+    "slug": "zenoti",
+    "india": 33,
+    "total": 55
+   }
+  ],
+  "zenwork": [],
+  "walmartglobaltech": [],
+  "zepto": [],
+  "wizfreight": [],
+  "zerodha": [],
+  "zerowatt": [],
+  "westerndigital": [
+   {
+    "ats": "smartrecruiters",
+    "slug": "westerndigital",
+    "india": 1,
+    "total": 1
+   }
+  ],
+  "wppmedia": [
+   {
+    "ats": "greenhouse",
+    "slug": "wppmedia",
+    "india": 64,
+    "total": 976
+   }
+  ],
+  "zoho": [],
+  "xymaanalytics": [],
+  "zeta": [
+   {
+    "ats": "lever",
+    "slug": "zeta",
+    "india": 22,
+    "total": 24
+   }
+  ],
+  "zuper": [],
+  "worldbankgroup": [],
+  "zfgroup": []
+ }
+}
