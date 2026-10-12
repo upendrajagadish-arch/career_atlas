@@ -59,23 +59,45 @@ function jobNode(p, j) {
 function eventNode(p, e) {
   return mk(p, 'ev:' + e.id, e.title, 'event', { sub: `${e.type} · ${e.source || 'News'} · ${dayLabel(e.date)}`, data: { event: e } });
 }
-function liveLibraries(r) {
-  if (!J.data) return [];
+const byCompany = list => list.slice().sort((a, b) => a.company.localeCompare(b.company)).map(j => ({ key: 'lj:' + j.key, name: j.company, build: g => jobNode(g, j) }));
+function liveOpeningsNode(r) {
   const d = J.data;
-  return [
-    mk(r, 'live', 'Live fresher openings', 'library', { sub: `${d.totals.jobs} openings · updated ${dayLabel(d.date)}`, factory: n =>
-      [...J.byTrack].sort((a, b) => b[1].length - a[1].length).map(([track, list]) => mk(n, 'lt:' + slugify(track), track, 'section', {
-        sub: `${plural(list.length, 'opening')} · ${plural(new Set(list.map(j => j.company)).size, 'company')}`, data: { what: 'track', track, jobs: list },
-        factory: g => grouped(g, list.slice().sort((a, b) => a.company.localeCompare(b.company)).map(j => ({ key: 'lj:' + j.key, name: j.company, build: gg => jobNode(gg, j) })), 'openings'),
-      })) }),
-    mk(r, 'events', 'Drives, internships & hackathons', 'library', { sub: `${d.events.length} in the last 30 days`, factory: n => {
-      const byType = new Map(); d.events.forEach(e => pushTo(byType, e.type, e));
-      return [...byType].sort((a, b) => b[1].length - a[1].length).map(([type, list]) => mk(n, 'et:' + slugify(type), type, 'section', {
-        sub: plural(list.length, 'item'), data: { what: 'evtype', type, events: list },
-        factory: g => grouped(g, list.map(e => ({ key: 'ev:' + e.id, name: e.title, build: gg => eventNode(gg, e) })), 'items', 20, 24),
-      }));
-    } }),
-  ];
+  if (!d) return mk(r, 'live', 'Live fresher openings', 'library', { sub: 'Job feed not generated yet' });
+  return mk(r, 'live', 'Live fresher openings', 'library', { sub: `${d.totals.jobs} openings · updated ${dayLabel(d.date)}`, factory: n =>
+    [...J.byTrack].sort((a, b) => b[1].length - a[1].length).map(([track, list]) => mk(n, 'lt:' + slugify(track), track, 'section', {
+      sub: `${plural(list.length, 'opening')} · ${plural(new Set(list.map(j => j.company)).size, 'company')}`, data: { what: 'track', track, jobs: list },
+      factory: g => grouped(g, byCompany(list), 'openings'),
+    })) });
+}
+function eventsNode(r) {
+  const d = J.data;
+  if (!d) return null;
+  return mk(r, 'events', 'Drives, internships & hackathons', 'library', { sub: `${d.events.length} in the last 30 days`, factory: n => {
+    const byType = new Map(); d.events.forEach(e => pushTo(byType, e.type, e));
+    return [...byType].sort((a, b) => b[1].length - a[1].length).map(([type, list]) => mk(n, 'et:' + slugify(type), type, 'section', {
+      sub: plural(list.length, 'item'), data: { what: 'evtype', type, events: list },
+      factory: g => grouped(g, list.map(e => ({ key: 'ev:' + e.id, name: e.title, build: gg => eventNode(gg, e) })), 'items', 20, 24),
+    }));
+  } });
+}
+// Live openings city by city; the three directory cities also carry their hiring-company directory.
+function locationsNode(r) {
+  const byCity = new Map();
+  (J.data?.jobs || []).forEach(j => pushTo(byCity, j.city, j));
+  const cities = uniq([...CITIES, ...JOB_CITIES]).filter(c => byCity.has(c) || CITIES.includes(c));
+  return mk(r, 'loc', 'Location-wise job openings', 'library', {
+    sub: `${cities.length} locations`, has: new Set([...cities.map(c => 'lc:' + c), ...CITIES.map(c => 'city:' + c)]),
+    factory: n => cities.map(city => {
+      const jobs = byCity.get(city) || [], dir = CITIES.includes(city);
+      return mk(n, 'lc:' + city, city, 'section', {
+        sub: `${plural(jobs.length, 'live opening')}${dir ? ' · company directory' : ''}`, data: { what: 'loccity', city, jobs }, has: dir ? new Set(['city:' + city]) : null,
+        factory: cn => [
+          jobs.length && mk(cn, 'lcj', `Live openings in ${city} (${jobs.length})`, 'section', { data: { what: 'loclive', city, jobs }, factory: g => grouped(g, byCompany(jobs), 'openings') }),
+          dir && cityNode(cn, city, `Hiring companies in ${city}`),
+        ],
+      });
+    }),
+  });
 }
 function companyLiveNodes(p, c) {
   if (!J.data) return [];
@@ -135,8 +157,14 @@ function liveBody(n) {
       + `<div class="btn-row">${openFeedBtn('Open the job feed', {}, true)}</div>` + staleNote();
   }
   if (n.kind === 'library' && n.key === 'events') return `<p>Fresher job drives, internships and hackathons you can apply or register for, from the last 30 days. General hiring news and anything asking for experience is left out.</p><div class="btn-row">${openFeedBtn('Open drives, internships & hackathons', { tab: 'events' }, true)}</div>`;
+  if (n.kind === 'library' && n.key === 'loc') return `<p>Today's fresher and intern openings grouped by city. Hyderabad, Bengaluru and Chennai also list every hiring company in the directory, by category.</p>`
+    + (J.data ? facts(kids(n).map(c => [c.title, esc(c.sub)])) : staleNote());
   if (n.kind !== 'section') return null;
   switch (d.what) {
+    case 'loccity': return `<p>${d.jobs.length ? `<b>${plural(d.jobs.length, 'live fresher / intern opening')}</b> in ${esc(d.city)} today.` : `No live opening in ${esc(d.city)} on the tracked boards today.`}</p>`
+      + (d.jobs.length ? `${miniJobs(d.jobs)}<div class="btn-row">${openFeedBtn(`All ${esc(d.city)} openings`, { city: d.city }, true)}</div>` : '')
+      + `<h3>Search fresher jobs in ${esc(d.city)}</h3>${siteLinkHTML('fresher', d.city === 'Other India' ? '' : d.city)}`;
+    case 'loclive': return `<p>${plural(d.jobs.length, 'opening')} in ${esc(d.city)}, grouped by company.</p>${miniJobs(d.jobs)}<div class="btn-row">${openFeedBtn('Filter the job feed', { city: d.city }, true)}</div>`;
     case 'live': return `<p>${plural(d.jobs.length, 'fresher / intern opening')} at <b>${esc(d.company.name)}</b> on its official job board today.</p>${miniJobs(d.jobs)}<div class="btn-row">${openFeedBtn('See them in the job feed', { cid: d.company.id }, true)}</div>`;
     case 'news': return `<p>Fresher drives, internships and hackathons from <b>${esc(d.company.name)}</b> in the last 30 days.</p>${miniEvents(d.events)}`;
     case 'rolelive': return `<p>${plural(d.jobs.length, 'live opening')} that match the <b>${esc(d.rm.name)}</b> role today.</p>${miniJobs(d.jobs)}<div class="btn-row">${openFeedBtn('See all in the job feed', { role: d.rm.slug }, true)}</div>`;

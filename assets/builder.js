@@ -2,6 +2,7 @@
 /* Timetable builder: combine selected skills (and role syllabi) into one dated 80-hour lecture timetable. */
 
 const BUILD_KEY = 'atlas.builder';
+const BUILD_LOG = 'build';
 const COLORS = ['#3b6cf6', '#e8590c', '#2f9e44', '#ae3ec9', '#0c8599', '#d6336c', '#f08c00', '#6741d9', '#66a80f', '#a61e4d', '#1098ad', '#868e96'];
 const SLOT_TIMES = [['0900', '1000'], ['1000', '1100'], ['1115', '1215'], ['1215', '1315']];
 const builderEl = $('#builderModal'), builderCard = builderEl.firstElementChild;
@@ -59,15 +60,6 @@ function lecturesFor(it) {
   if (B.coverage === 'first') return pool.slice(0, n);
   return Array.from({ length: n }, (_, k) => pool[Math.floor(k * pool.length / n)]);
 }
-function teachingDates(n) {
-  const out = [], hol = new Set(B.holidays), d = parseISO(B.start || nextMonday());
-  while (out.length < n) {
-    const wd = d.getDay();
-    if (wd >= 1 && wd <= 5 && !hol.has(isoDate(d))) out.push(new Date(d));
-    d.setDate(d.getDate() + 1);
-  }
-  return out;
-}
 function buildSchedule() {
   const queues = B.items.filter(it => it.hours > 0).map(it => ({ it, list: lecturesFor(it), k: 0 }));
   let seq = [];
@@ -81,13 +73,27 @@ function buildSchedule() {
     }
   }
   if (!seq.length) return null;
-  const dates = teachingDates(Math.ceil(seq.length / 4));
-  const lectures = seq.map((l, i) => ({ ...l, n: i + 1, slot: i % 4, dayNo: Math.floor(i / 4) + 1, date: dates[Math.floor(i / 4)] }));
-  const days = dates.map((date, k) => ({ k: k + 1, date, week: Math.floor(k / 5) + 1, lectures: lectures.slice(k * 4, k * 4 + 4) }));
+  const hol = new Set(B.holidays), dates = [], cursor = parseISO(B.start || nextMonday());
+  const dateAt = k => {
+    while (dates.length <= k) {
+      const wd = cursor.getDay();
+      if (wd >= 1 && wd <= 5 && !hol.has(isoDate(cursor))) dates.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return dates[k];
+  };
+  const r = reflow(seq.map((l, i) => ({ ...l, n: i + 1 })), k => isoDate(dateAt(k)), taughtLog(BUILD_LOG));
+  const days = r.days.map(d => {
+    const date = dateAt(d.k);
+    d.lectures.forEach(l => { l.dayNo = d.k + 1; l.date = date; if (l.carriedFrom != null) l.carriedDate = dateAt(l.carriedFrom); });
+    return { ...d, k: d.k + 1, date };
+  });
   const weeks = [];
   days.forEach(d => (weeks[d.week - 1] ||= []).push(d));
-  return { lectures, days, weeks, start: dates[0], end: dates.at(-1) };
+  return { lectures: days.flatMap(d => d.lectures), days, weeks, start: days[0].date, end: days.at(-1).date, carried: r.carried, extraDays: r.extraDays };
 }
+const weekRange = days => { const ls = days.flatMap(d => d.lectures); return ls.length ? `${ls[0].n}–${ls.at(-1).n}` : '—'; };
+const builderCarry = l => (l.carriedDate ? ` <em class="g-carry" title="Not taught on ${fmtDate(l.carriedDate)} — carried forward">↻ from ${fmtDate(l.carriedDate)}</em>` : '');
 
 /* ------------------------------------------------------------------ views */
 function skillListHTML() {
@@ -152,18 +158,18 @@ function setupHTML() {
 }
 const legend = () => `<div class="b-legend">${B.items.filter(it => it.hours).map(it => `<span style="--c:${colorOf(it)}"><i class="b-dot"></i>${esc(nameOf(it))} · ${it.hours} h</span>`).join('')}</div>`;
 
-function bTimetable(sch) {
-  return legend() + sch.weeks.map((days, wi) => {
-    const first = days[0].lectures[0].n, last = days.at(-1).lectures.at(-1).n;
-    let g = `<div class="g-h">Time</div>${days.map(d => `<div class="g-h">${fmtDate(d.date)}<small>Teaching day ${d.k}</small></div>`).join('')}`;
+function bTimetable(sch, print) {
+  return (print ? '' : reframeNote(sch, 'data-b="untaught"')) + legend() + sch.weeks.map((days, wi) => {
+    let g = `<div class="g-h">Time</div>${days.map(d => `<div class="g-h">${fmtDate(d.date)}<small>Teaching day ${d.k}</small>${taughtSelect(`data-btaught="${d.id}"`, d)}</div>`).join('')}`;
     SLOTS.forEach((slot, hi) => {
       if (hi === 2) g += '<div class="g-break">Break · 11:00 – 11:15</div>';
       g += `<div class="g-t">${slot}<small>Lecture ${hi + 1}</small></div>` + days.map(d => {
         const l = d.lectures[hi];
-        return l ? `<div class="g-c b-cell" style="--c:${colorOf(l.item)}"><span class="g-no">Hour ${l.n} · <span class="b-tagname">${esc(rmOf(l.item).name)}</span></span><span class="b-title">${esc(l.title)}</span><small class="b-lvl">${l.level} · ${esc(l.theme)}</small></div>` : '<div class="g-c b-empty"></div>';
+        if (!l) return d.logged != null && hi >= d.cap ? movedCell(d) : '<div class="g-c b-empty"></div>';
+        return `<div class="g-c b-cell${l.carriedDate ? ' carried' : ''}" style="--c:${colorOf(l.item)}"><span class="g-no">Hour ${l.n} · <span class="b-tagname">${esc(rmOf(l.item).name)}</span>${builderCarry(l)}</span><span class="b-title">${esc(l.title)}</span><small class="b-lvl">${l.level} · ${esc(l.theme)}</small></div>`;
       }).join('');
     });
-    return `<section class="m-week"><div class="m-week-h"><div><h3>Week ${wi + 1} <small>${fmtDate(days[0].date)} – ${fmtDate(days.at(-1).date)}</small></h3><p>Lecture hours ${first}–${last} · ${days.length} teaching days</p></div></div>
+    return `<section class="m-week"><div class="m-week-h"><div><h3>Week ${wi + 1} <small>${fmtDate(days[0].date)} – ${fmtDate(days.at(-1).date)}</small></h3><p>Lecture hours ${weekRange(days)} · ${days.length} teaching days</p></div></div>
       <div class="m-gridwrap"><div class="m-grid" style="grid-template-columns:120px repeat(${days.length},minmax(150px,1fr))">${g}</div></div></section>`;
   }).join('');
 }
@@ -178,8 +184,8 @@ function bCalendar(sch) {
     const date = new Date(y, m, day), iso = isoDate(date), wd = date.getDay(), we = wd === 0 || wd === 6, t = byDate.get(iso), h = hol.has(iso);
     const cls = ['cal-c', we && 'we', h && 'hol', t && 'teach', iso === today && 'today'].filter(Boolean).join(' ');
     const act = we ? '' : ` data-b="hol:${iso}" title="${h ? 'Holiday — click to make it a teaching day again' : 'Click to mark as a holiday'}"`;
-    cells += `<div class="${cls}"${act}><div class="cal-d"><b>${day}</b>${t ? `<span>Day ${t.k}</span>` : h ? '<span>Holiday</span>' : we ? '<span>Weekend</span>' : ''}</div>`
-      + (t ? t.lectures.map(l => `<div class="cal-l" style="--c:${colorOf(l.item)}" title="${esc(`${SLOTS[l.slot]} · ${rmOf(l.item).name} · ${l.title}`)}"><i></i><span>${esc(l.title)}</span></div>`).join('') : '')
+    cells += `<div class="${cls}${t && t.logged != null && t.cap < DAY_HOURS ? ' short' : ''}"${act}><div class="cal-d"><b>${day}</b>${t ? `<span>Day ${t.k}${t.logged != null ? ` · ${t.cap}/${DAY_HOURS} h taught` : ''}</span>` : h ? '<span>Holiday</span>' : we ? '<span>Weekend</span>' : ''}</div>`
+      + (t ? t.lectures.map(l => `<div class="cal-l${l.carriedDate ? ' carried' : ''}" style="--c:${colorOf(l.item)}" title="${esc(`${SLOTS[l.slot]} · ${rmOf(l.item).name} · ${l.title}${l.carriedDate ? ` · carried forward from ${fmtDate(l.carriedDate)}` : ''}`)}"><i></i><span>${l.carriedDate ? '↻ ' : ''}${esc(l.title)}</span></div>`).join('') : '')
       + '</div>';
   }
   cells += '<div class="cal-c out"></div>'.repeat((7 - (lead + count) % 7) % 7);
@@ -187,13 +193,13 @@ function bCalendar(sch) {
       <label class="b-label b-inline">Start date <input id="bStart" type="date" class="b-input" value="${B.start}"></label>
       <div class="cal-months">${months.map(d => `<button class="chip-btn${d.getFullYear() === y && d.getMonth() === m ? ' primary' : ''}" data-b="goto:${d.getFullYear()}-${pad2(d.getMonth() + 1)}">${d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}</button>`).join('')}</div></div>
     ${legend()}<div class="cal">${cells}</div>
-    ${note('Click any weekday to mark it as a holiday — the lectures move to the next working day automatically. Weekends are always free. Download the calendar file to add every lecture to Google Calendar or Outlook.')}`;
+    ${note('Click any weekday to mark it as a holiday — the lectures move to the next working day automatically. If the trainer taught fewer hours on a day, set <b>Hours taught</b> under that day in the Timetable tab — the untaught lectures carry forward and every later day is re-arranged. Weekends are always free. Download the calendar file to add every lecture to Google Calendar or Outlook.')}`;
 }
 function bSyllabus(sch) {
   return B.items.filter(it => it.hours).map(it => {
     const ls = sch.lectures.filter(l => l.item === it);
     return `<section class="b-syl" style="--c:${colorOf(it)}"><div class="b-syl-h"><i class="b-dot"></i><h3>${esc(nameOf(it))}</h3><small>${ls.length} lecture hours · ${levelNames(it).join(', ')} · ${fmtDate(ls[0].date)} → ${fmtDate(ls.at(-1).date)}</small></div>
-      <ol class="b-syl-list">${ls.map(l => `<li><span class="b-when">${fmtDate(l.date)} · ${SLOTS[l.slot]}</span><b>${esc(l.title)}</b><small>Hour ${l.n} of ${sch.lectures.length} · ${l.level} · ${esc(l.theme)}</small></li>`).join('')}</ol></section>`;
+      <ol class="b-syl-list">${ls.map(l => `<li><span class="b-when">${fmtDate(l.date)} · ${SLOTS[l.slot]}</span><b>${esc(l.title)}</b><small>Hour ${l.n} of ${sch.lectures.length} · ${l.level} · ${esc(l.theme)}${l.carriedDate ? ` · ↻ carried forward from ${fmtDate(l.carriedDate)}` : ''}</small></li>`).join('')}</ol></section>`;
   }).join('');
 }
 
@@ -203,8 +209,8 @@ function renderBuilder(keepScroll) {
   const sch = buildSchedule();
   if (!sch) B.tab = 'setup';
   const tabs = [['setup', '1 · Select skills & syllabus'], ['tt', '2 · Timetable'], ['cal', '3 · Calendar'], ['syl', '4 · Syllabus']];
-  const views = { setup: setupHTML, tt: () => bTimetable(sch), cal: () => bCalendar(sch), syl: () => bSyllabus(sch), all: () => bTimetable(sch) + '<h2 class="m-print-h">Syllabus</h2>' + bSyllabus(sch) };
-  const sub = sch ? `${B.items.filter(it => it.hours).length} subjects · ${sch.lectures.length} lecture hours · ${sch.days.length} teaching days · ${fmtDate(sch.start, true)} → ${fmtDate(sch.end, true)}`
+  const views = { setup: setupHTML, tt: () => bTimetable(sch), cal: () => bCalendar(sch), syl: () => bSyllabus(sch), all: () => bTimetable(sch, true) + '<h2 class="m-print-h">Syllabus</h2>' + bSyllabus(sch) };
+  const sub = sch ? `${B.items.filter(it => it.hours).length} subjects · ${sch.lectures.length} lecture hours · ${sch.days.length} teaching days${sch.carried ? ` (reframed — ${sch.carried} h carried forward)` : ''} · ${fmtDate(sch.start, true)} → ${fmtDate(sch.end, true)}`
     : 'Select skills from a role or the skill list, choose the syllabus levels, and get one combined 80-hour lecture timetable with real dates.';
   const dis = sch ? '' : ' disabled';
   builderCard.innerHTML = `<header class="m-head"><div class="m-headl"><span class="pill k-overview">Timetable builder</span><h2 id="bTitleH">${esc(titleOf())}</h2><p>${sub}</p>
@@ -228,6 +234,13 @@ function openBuilder(seed = {}) {
     B.role = seed.role; balance();
   }
   if (seed.skill && !findItem('skill', seed.skill)) { addItem('skill', seed.skill); balance(); }
+  if (seed.skills?.length) {
+    const fresh = seed.skills.filter(s => S.SKILL[s] && !findItem('skill', s));
+    if (fresh.length && B.items.length && confirm(`Start a new timetable with the ${seed.skills.length} skills from this job description?\n\nOK = replace the current subjects · Cancel = add them to the current list`)) B.items = [];
+    seed.skills.filter(s => S.SKILL[s]).forEach(s => addItem('skill', s));
+    if (seed.title) B.title = seed.title;
+    B.role = seed.role || B.role; balance();
+  }
   B.tab = 'setup'; B.filter = ''; B.month = '';
   saveBuilder();
   S.builder = true; builderEl.hidden = false;
@@ -254,7 +267,8 @@ function builderWorkbook(sch) {
   [['Start date', fmtDate(sch.start, true)], ['End date', fmtDate(sch.end, true)], ['Teaching days', `${sch.days.length}`], ['Lecture hours', `${sch.lectures.length}`],
     ['Daily timings', `${SLOTS.join('   |   ')}   (break 11:00 – 11:15)`], ['Arrangement', B.mode === 'block' ? 'One subject after another' : 'Mixed every day'],
     ['Lecture selection', B.coverage === 'spread' ? 'Basic → advanced, spread across the selected levels' : 'In order from the start of the selected levels'],
-    ['Holidays', B.holidays.map(h => fmtDate(parseISO(h), true)).join(', ') || 'None (weekends free)']].forEach(([k, v]) => {
+    ['Holidays', B.holidays.map(h => fmtDate(parseISO(h), true)).join(', ') || 'None (weekends free)'],
+    ['Hours taught', (() => { const lg = sch.days.filter(d => d.logged != null); return lg.length ? `${lg.length} days logged · ${lg.reduce((a, d) => a + d.cap, 0)} of ${lg.length * DAY_HOURS} hours taught · ${sch.carried} lecture hours carried forward to the following days` : 'No days logged yet — the timetable is as planned'; })()]].forEach(([k, v]) => {
     const r = ov.rows.length; ov.rows.push([L(k), W(v)]); ov.merges.push(`B${r + 1}:F${r + 1}`);
   });
   ov.rows.push([], [H('#'), H('Subject'), H('Type'), H('Hours'), H('Syllabus levels'), H('Dates')]);
@@ -265,22 +279,28 @@ function builderWorkbook(sch) {
 
   const weekSheets = sch.weeks.map((days, wi) => {
     const sh = { name: `Week ${wi + 1}`, cols: [18, ...days.map(() => 36)], merges: [`A1:${colName(days.length)}1`, `A2:${colName(days.length)}2`], heights: { 0: 26, 3: 34 }, freeze: 4 };
-    sh.rows = [[T(`${title} · Week ${wi + 1}`)], [SUB(`${fmtDate(days[0].date, true)} – ${fmtDate(days.at(-1).date, true)} · lecture hours ${days[0].lectures[0].n} – ${days.at(-1).lectures.at(-1).n}`)], [],
-      [H('Time'), ...days.map(d => H(`${fmtDate(d.date, true)}\nTeaching day ${d.k}`))]];
+    sh.rows = [[T(`${title} · Week ${wi + 1}`)], [SUB(`${fmtDate(days[0].date, true)} – ${fmtDate(days.at(-1).date, true)} · lecture hours ${weekRange(days)}`)], [],
+      [H('Time'), ...days.map(d => H(`${fmtDate(d.date, true)}\nTeaching day ${d.k}${d.logged != null ? `\nTaught ${d.cap} of ${DAY_HOURS} h` : ''}`))]];
+    sh.heights[3] = 46;
     SLOTS.forEach((slot, hi) => {
       if (hi === 2) { sh.merges.push(`B${sh.rows.length + 1}:${colName(days.length)}${sh.rows.length + 1}`); sh.rows.push([BRK('11:00 – 11:15'), BRK('Break'), ...days.slice(1).map(() => BRK(''))]); }
       sh.heights[sh.rows.length] = 66;
-      sh.rows.push([TM(`${slot}\nLecture ${hi + 1}`), ...days.map(d => { const l = d.lectures[hi]; return C(l ? `Hour ${l.n} · ${rmOf(l.item).name}\n${l.title}\n(${l.level})` : ''); })]);
+      sh.rows.push([TM(`${slot}\nLecture ${hi + 1}`), ...days.map(d => {
+        const l = d.lectures[hi];
+        if (!l) return C(d.logged != null && hi >= d.cap ? 'Not taught — moved to the next day' : '');
+        return C(`Hour ${l.n} · ${rmOf(l.item).name}${l.carriedDate ? `  ↻ from ${fmtDate(l.carriedDate)}` : ''}\n${l.title}\n(${l.level})`);
+      })]);
     });
     return sh;
   });
 
-  const sched = { name: 'Schedule', cols: [7, 18, 13, 7, 7, 26, 13, 30, 46, 40], freeze: 3, merges: ['A1:J1'], heights: { 0: 26 },
-    rows: [[T(`${title} — day-by-day schedule`)], [SUB(range)], ['Hour', 'Date', 'Time', 'Day', 'Week', 'Subject', 'Level', 'Day theme', 'Lecture', 'Key topics'].map(H)] };
+  const sched = { name: 'Schedule', cols: [7, 18, 13, 7, 7, 26, 13, 30, 46, 40, 28], freeze: 3, merges: ['A1:K1'], heights: { 0: 26 },
+    rows: [[T(`${title} — day-by-day schedule`)], [SUB(range)], ['Hour', 'Date', 'Time', 'Day', 'Week', 'Subject', 'Level', 'Day theme', 'Lecture', 'Key topics', 'Note'].map(H)] };
   sch.lectures.forEach(l => {
     const parts = lectureParts(l.title);
     sched.heights[sched.rows.length] = 15 * Math.max(lines(l.title, 44), parts ? parts.length : 1, lines(l.theme, 28)) + 6;
-    sched.rows.push([CC(l.n), C(fmtDate(l.date, true)), C(SLOTS[l.slot]), CC(l.dayNo), CC(Math.floor((l.dayNo - 1) / 5) + 1), C(rmOf(l.item).name), CC(l.level), C(l.theme), C(l.title), C(parts ? parts.map(p => '• ' + p).join('\n') : '')]);
+    sched.rows.push([CC(l.n), C(fmtDate(l.date, true)), C(SLOTS[l.slot]), CC(l.dayNo), CC(Math.floor((l.dayNo - 1) / 5) + 1), C(rmOf(l.item).name), CC(l.level), C(l.theme), C(l.title),
+      C(parts ? parts.map(p => '• ' + p).join('\n') : ''), C(l.carriedDate ? `Carried forward from ${fmtDate(l.carriedDate, true)}` : '')]);
   });
 
   const bySub = { name: 'Syllabus by subject', cols: [7, 18, 13, 13, 32, 50], merges: ['A1:F1'], heights: { 0: 26 }, rows: [[T(`${title} — syllabus by subject`)], [SUB('Every included lecture, grouped by subject, in teaching order.')], []] };
@@ -355,6 +375,7 @@ builderEl.addEventListener('click', e => {
     case 'hol': B.holidays = B.holidays.includes(a) ? B.holidays.filter(h => h !== a) : [...B.holidays, a].sort(); break;
     case 'month': { const sch = buildSchedule(), base = B.month ? parseISO(B.month + '-01') : new Date(sch.start.getFullYear(), sch.start.getMonth(), 1); base.setMonth(base.getMonth() + +a); B.month = `${base.getFullYear()}-${pad2(base.getMonth() + 1)}`; break; }
     case 'goto': B.month = a; break;
+    case 'untaught': if (!confirm('Clear every hours-taught entry and go back to the planned timetable?')) return; clearTaught(BUILD_LOG); break;
     case 'tab': B.tab = a; keep = false; break;
     default: return;
   }
@@ -369,6 +390,7 @@ builderEl.addEventListener('change', e => {
   if (el.id === 'bRole') B.role = el.value;
   else if (el.id === 'bStart') { if (!el.value) return; B.start = el.value; B.month = ''; }
   else if (el.dataset.bh) setHours(B.items[+el.dataset.bh], el.value);
+  else if (el.dataset.btaught) setTaught(BUILD_LOG, el.dataset.btaught, el.value);
   else return;
   saveBuilder(); renderBuilder(true);
 });

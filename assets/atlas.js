@@ -182,7 +182,7 @@ const KIND_LABEL = {
   root: 'Mind map', city: 'City', category: 'Company category', group: 'Group', company: 'Company', section: 'Branch',
   role: 'Fresher role', jd: 'Verified job posting', roadmap: 'Role roadmap', skill: 'Skill roadmap', overview: 'Complete guide',
   week: 'Teaching week', day: 'Teaching day', hour: 'Lecture hour', stage: 'Interview stage', concept: 'Preparation area', info: 'Detail', library: 'Library',
-  job: 'Live opening', event: 'Hiring event',
+  job: 'Live opening', event: 'Opening / drive', hub: 'Team', tool: 'Tool',
 };
 
 /* ------------------------------------------------------------------ state */
@@ -278,15 +278,39 @@ function planFor(title, c) {
   };
 }
 
+// Three team hubs. Each hub's `has` lists the keys reachable below it, so saved paths such as
+// ['roles', 'rr:backend'] or ['city:Chennai', …] still resolve from the root.
 function buildRoot() {
+  const cityKeys = CITIES.map(c => 'city:' + c);
   return mk(null, 'root', 'Fresher Career Atlas 2026', 'root', {
-    sub: 'Hyderabad · Bengaluru · Chennai',
+    sub: 'Outreach · Training · Profile development',
     factory: r => [
-      ...CITIES.map(c => cityNode(r, c)),
-      mk(r, 'roles', 'Role roadmaps', 'library', { sub: `${S.data.catalog.role.length} career paths`, factory: rolesLibrary }),
-      mk(r, 'skills', 'Skill roadmaps', 'library', { sub: `${S.data.catalog.skill.length} skills`, factory: skillsLibrary }),
-      ...liveLibraries(r),
-      mk(r, 'jds', 'Verified job postings', 'library', { sub: `${S.data.metadata.jobEvidence} sourced JDs`, factory: jdsLibrary }),
+      mk(r, 'outreach', 'Outreach team', 'hub', {
+        sub: 'Jobs & openings for freshers', data: { hub: 'outreach' },
+        has: new Set(['live', 'loc', 'jds', 'events', ...cityKeys, ...CITIES.map(c => 'lc:' + c)]),
+        factory: o => [
+          liveOpeningsNode(o),
+          locationsNode(o),
+          mk(o, 'jds', 'Verified job openings', 'library', { sub: `${S.data.metadata.jobEvidence} sourced job descriptions`, factory: jdsLibrary }),
+          eventsNode(o),
+        ],
+      }),
+      mk(r, 'training', 'Training', 'hub', {
+        sub: 'Role & skill roadmaps · 80-hour timetables', data: { hub: 'training' }, has: new Set(['roles', 'skills', 'tbuild']),
+        factory: t => [
+          mk(t, 'roles', 'Role roadmaps', 'library', { sub: `${S.data.catalog.role.length} career paths`, factory: rolesLibrary }),
+          mk(t, 'skills', 'Skill roadmaps', 'library', { sub: `${S.data.catalog.skill.length} skills`, factory: skillsLibrary }),
+          mk(t, 'tbuild', 'Timetable builder', 'tool', { sub: 'Combine skills · 4 h a day · carry-forward', data: { tool: 'builder' } }),
+        ],
+      }),
+      mk(r, 'profile', 'Profile development', 'hub', {
+        sub: 'Resume & JD-based profile', data: { hub: 'profile' }, has: new Set(['resume', 'pbuild', 'rbulk']),
+        factory: p => [
+          mk(p, 'resume', 'Resume for the job description', 'tool', { sub: 'Tailor your resume to a role or JD', data: { tool: 'resume' } }),
+          mk(p, 'pbuild', 'JD-based profile builder', 'tool', { sub: 'Skills, gaps, training & headline from a JD', data: { tool: 'profile' } }),
+          mk(p, 'rbulk', 'Bulk resume tailoring', 'tool', { sub: 'Many resumes · one ZIP', data: { tool: 'bulk' } }),
+        ],
+      }),
     ],
   });
 }
@@ -300,10 +324,10 @@ function cityCompanies(city) {
   }
   return [...byCat].sort((a, b) => b[1].size - a[1].size);
 }
-function cityNode(p, city) {
+function cityNode(p, city, title) {
   const cats = cityCompanies(city);
   const total = new Set(cats.flatMap(([, m]) => [...m.keys()])).size;
-  return mk(p, 'city:' + city, city, 'city', {
+  return mk(p, 'city:' + city, title || city, 'city', {
     sub: `${total} companies · ${cats.length} categories`, data: { city, cats, total },
     factory: n => cats.map(([cat, m]) => mk(n, 'cat:' + cat, cat, 'category', {
       sub: `${m.size} companies in ${city}`, data: { city, category: cat, count: m.size },
@@ -409,6 +433,54 @@ function planOf(rm) {
   rm._plan = { info, days, weeks: [0, 1, 2, 3].map(w => days.slice(w * 5, w * 5 + 5)) };
   return rm._plan;
 }
+/* ------------------------------------------------------------------ hours actually taught & carry-forward */
+const DAY_HOURS = 4;
+const DLOG_KEY = 'atlas.taught.v1';
+const DLOG = (() => { try { return JSON.parse(localStorage.getItem(DLOG_KEY)) || {}; } catch { return {}; } })();
+const taughtLog = id => DLOG[id] || {};
+function setTaught(id, day, v) {
+  const m = DLOG[id] ||= {};
+  if (v === '' || v == null) delete m[day]; else m[day] = clamp(Math.round(+v), 0, DAY_HOURS);
+  if (!Object.keys(m).length) delete DLOG[id];
+  localStorage.setItem(DLOG_KEY, JSON.stringify(DLOG));
+}
+function clearTaught(id) { delete DLOG[id]; localStorage.setItem(DLOG_KEY, JSON.stringify(DLOG)); }
+
+// Packs lectures into teaching days of DAY_HOURS each. A day where the trainer logged fewer hours keeps only the
+// lectures that were taught; the untaught ones open the next day and every later lecture shifts along with them.
+function reflow(seq, idAt, log) {
+  const days = [];
+  let i = 0;
+  for (let k = 0; i < seq.length && k < seq.length + 500; k++) {
+    const id = idAt(k), logged = log[id] ?? null, cap = logged ?? DAY_HOURS;
+    const lectures = seq.slice(i, i + cap).map((l, j) => ({ ...l, slot: j, k, shift: k - Math.floor((i + j) / DAY_HOURS) }));
+    if (cap < DAY_HOURS) seq.slice(i + cap, i + DAY_HOURS).forEach(l => { l.carriedFrom ??= k; });
+    i += lectures.length;
+    days.push({ k, id, cap, logged, lectures, week: Math.floor(k / 5) + 1 });
+  }
+  const weeks = [];
+  days.forEach(d => (weeks[d.week - 1] ||= []).push(d));
+  const carried = seq.filter(l => l.carriedFrom != null).length;
+  seq.forEach(l => delete l.carriedFrom);
+  return { days, weeks, carried, extraDays: Math.max(0, days.length - Math.ceil(seq.length / DAY_HOURS)) };
+}
+const taughtOptions = logged => `<option value=""${logged == null ? ' selected' : ''}>Planned · ${DAY_HOURS} h</option>`
+  + Array.from({ length: DAY_HOURS + 1 }, (_, h) => DAY_HOURS - h).map(h => `<option value="${h}"${logged === h ? ' selected' : ''}>${h === DAY_HOURS ? `Taught all ${h} h ✓` : h ? `Taught only ${h} h` : 'No class (0 h)'}</option>`).join('');
+const taughtSelect = (attr, d) => `<label class="tl${d.logged == null ? '' : d.logged < DAY_HOURS ? ' short' : ' done'}" title="Hours the trainer actually taught this day — untaught lectures move to the next day">`
+  + `<span>Hours taught</span><select class="tl-sel" ${attr}>${taughtOptions(d.logged)}</select></label>`;
+
+// The 80 lectures of one role / skill plan, laid out over teaching days with the trainer's log applied.
+function planSchedule(rm) {
+  const seq = [];
+  planOf(rm).days.forEach((day, k) => day.hours.forEach((title, hi) => {
+    const w = Math.floor(k / 5) + 1, d = k % 5 + 1;
+    seq.push({ title, theme: day.theme, w, d, i: hi + 1, n: seq.length + 1, level: LEVELS[w - 1][0] });
+  }));
+  const s = reflow(seq, k => 'D' + (k + 1), taughtLog('rm:' + rm.slug));
+  s.seq = seq;
+  return s;
+}
+
 const linkedSkills = rm => (ROLE_SKILLS[rm.slug] || []).filter(s => S.SKILL[s]);
 const rolesUsing = slug => Object.keys(ROLE_SKILLS).filter(r => ROLE_SKILLS[r].includes(slug) && S.ROLE[r]);
 
@@ -499,7 +571,7 @@ const mctx = document.createElement('canvas').getContext('2d');
 const FONT = getComputedStyle(document.body).getPropertyValue('--font') || 'Segoe UI, sans-serif';
 function measure(n) {
   if (n.w) return;
-  const big = n.depth === 0, strong = big || n.kind === 'city' || n.kind === 'library';
+  const big = n.depth === 0, strong = big || n.kind === 'city' || n.kind === 'library' || n.kind === 'hub';
   n.fs = big ? 17 : 14; n.lh = Math.round(n.fs * 1.32);
   mctx.font = `${strong ? 600 : 500} ${n.fs}px ${FONT}`;
   const maxW = big ? 250 : n.kind === 'info' ? 280 : 230;
@@ -725,11 +797,12 @@ function revealKeys(keys, expand, from = S.root) {
   for (const k of keys) {
     setExpanded(n, true);
     let c = kids(n).find(x => x.key === k);
-    if (!c) {
+    for (let depth = 0; !c && depth < 4; depth++) {
       const g = kids(n).find(x => x.has && x.has.has(k));
       if (!g) break;
       setExpanded(g, true);
-      c = kids(g).find(x => x.key === k);
+      n = g;
+      c = kids(n).find(x => x.key === k);
     }
     if (!c) break;
     n = c;
@@ -1090,13 +1163,15 @@ function planWorkbook(rm) {
   const st = s => v => ({ v, s }), T = st(1), SUB = st(2), H = st(3), C = st(4), TM = st(5), BRK = st(6), TH = st(7), L = st(8), W = st(9), CC = st(10);
   const done = (w, d, i) => S.learned.has(lectureKey(rm, w, d, i));
   const typeLabel = role ? 'Role' : 'Skill';
+  const sch = planSchedule(rm), logged = sch.days.filter(d => d.logged != null);
 
   const ov = { name: 'Overview', rows: [[T(`${rm.name} — 80-hour lecture plan`)], [SUB(`${typeLabel} roadmap · 4 weeks · Monday – Friday · 4 one-hour lectures a day · lecture-only (no practice, lab or assignment blocks)`)], []],
     cols: [20, 16, 24, 14, 16, 64], merges: ['A1:F1', 'A2:F2'], heights: { 0: 26 } };
   const rowsFacts = [['About', info.about], role ? ['What they do', splitList(info.does, ';').map(s => '• ' + s).join('\n')] : ['Prerequisites', info.prereq],
     ['Tools', info.tools], role ? ['Career path', info.career] : ['Used in roles', rolesUsing(rm.slug).map(r => S.ROLE[r].name).join(', ')],
-    ['Total', '80 lecture hours'], ['Duration', '4 weeks · 20 teaching days'], ['Schedule', 'Monday – Friday, 4 lecture hours a day'],
+    ['Total', '80 lecture hours'], ['Duration', `${sch.weeks.length} weeks · ${sch.days.length} teaching days`], ['Schedule', `Monday – Friday, ${DAY_HOURS} lecture hours a day`],
     ['Daily timings', `${SLOTS.join('   |   ')}   (break 11:00 – 11:15)`], ['Format', 'Lectures only — no practice, lab or assignment blocks'],
+    ['Hours taught', logged.length ? `${logged.length} days logged · ${logged.reduce((a, d) => a + d.cap, 0)} of ${logged.length * DAY_HOURS} hours taught · ${sch.carried} lecture hours carried forward to the following days` : ''],
     ['Progress', `${progressOf({ kind, data: { rm } }).done} of 80 lecture hours learned`]].filter(f => f[1]);
   for (const [k, v] of rowsFacts) {
     const r = ov.rows.length;
@@ -1109,39 +1184,42 @@ function planWorkbook(rm) {
     ov.rows.push([CC(`Week ${w}`), CC(LEVELS[wi][0]), C(`${LEVELS[wi][1]} — ${WEEK_DESC[wi]}`), CC(`${dayNo(w, 1)} – ${dayNo(w, 5)}`), CC(`${hourNo(w, 1, 1)} – ${hourNo(w, 5, 4)}`), C(themes)]);
   });
 
-  const weekSheets = plan.weeks.map((days, wi) => {
-    const w = wi + 1, sh = { name: `Week ${w} - ${LEVELS[wi][0]}`, cols: [18, 34, 34, 34, 34, 34], merges: ['A1:F1', 'A2:F2'], heights: { 0: 26 }, freeze: 5 };
-    sh.rows = [[T(`${rm.name} · Week ${w} — ${LEVELS[wi][0]} (${LEVELS[wi][1]})`)],
-      [SUB(`Days ${dayNo(w, 1)} – ${dayNo(w, 5)} · Lecture hours ${hourNo(w, 1, 1)} – ${hourNo(w, 5, 4)} · ${WEEK_DESC[wi]}`)], [],
-      [H('Time'), ...days.map((_, di) => H(`${WEEKDAYS[di]}\nDay ${dayNo(w, di + 1)}`))],
-      [TM('Theme'), ...days.map(d => TH(d.theme))]];
-    sh.heights[3] = 32; sh.heights[4] = 34;
+  const carryTxt = l => (l.carriedFrom != null ? `Carried forward from day ${l.carriedFrom + 1}` : '');
+  const weekSheets = sch.weeks.map((days, wi) => {
+    const w = wi + 1, last = colName(days.length), ls = days.flatMap(d => d.lectures);
+    const sh = { name: `Week ${w} - ${weekLevels(days).split(' → ').at(-1)}`.slice(0, 31), cols: [18, ...days.map(() => 34)], merges: [`A1:${last}1`, `A2:${last}2`], heights: { 0: 26 }, freeze: 5 };
+    sh.rows = [[T(`${rm.name} · Week ${w} — ${weekLevels(days)}`)],
+      [SUB(`Days ${days[0].k + 1} – ${days.at(-1).k + 1}${ls.length ? ` · Lecture hours ${ls[0].n} – ${ls.at(-1).n}` : ''} · ${wi < 4 ? WEEK_DESC[wi] : 'Lectures carried forward to finish the plan.'}`)], [],
+      [H('Time'), ...days.map(d => H(`${WEEKDAYS[d.k % 5]}\nDay ${d.k + 1}${d.logged != null ? `\nTaught ${d.cap} of ${DAY_HOURS} h` : ''}`))],
+      [TM('Theme'), ...days.map(d => TH(dayThemes(d)))]];
+    sh.heights[3] = 46; sh.heights[4] = 34;
     SLOTS.forEach((slot, hi) => {
-      if (hi === 2) { sh.merges.push(`B${sh.rows.length + 1}:F${sh.rows.length + 1}`); sh.rows.push([BRK('11:00 – 11:15'), BRK('Break'), BRK(''), BRK(''), BRK(''), BRK('')]); }
+      if (hi === 2) { sh.merges.push(`B${sh.rows.length + 1}:${last}${sh.rows.length + 1}`); sh.rows.push([BRK('11:00 – 11:15'), BRK('Break'), ...days.slice(1).map(() => BRK(''))]); }
       sh.heights[sh.rows.length] = 64;
-      sh.rows.push([TM(`${slot}\nLecture ${hi + 1}`), ...days.map((d, di) => C(`Hour ${hourNo(w, di + 1, hi + 1)}${done(w, di + 1, hi + 1) ? '  ✓ learned' : ''}\n${d.hours[hi]}`))]);
+      sh.rows.push([TM(`${slot}\nLecture ${hi + 1}`), ...days.map(d => {
+        const l = d.lectures[hi];
+        if (!l) return C(d.logged != null && hi >= d.cap ? 'Not taught — moved to the next day' : '');
+        return C(`Hour ${l.n}${done(l.w, l.d, l.i) ? '  ✓ learned' : ''}${l.carriedFrom != null ? `  ↻ from day ${l.carriedFrom + 1}` : ''}\n${l.title}`);
+      })]);
     });
     sh.rows.push([], [H('Hour'), H('Day'), H('Time'), H('Theme'), H('Lecture'), H('Key topics')]);
-    days.forEach((d, di) => d.hours.forEach((h, hi) => {
-      const parts = lectureParts(h);
-      sh.heights[sh.rows.length] = 15 * Math.max(lines(h, 32), lines(d.theme, 32), parts ? parts.length : 1) + 6;
-      sh.rows.push([CC(hourNo(w, di + 1, hi + 1)), C(`${WEEKDAYS[di]} · Day ${dayNo(w, di + 1)}`), C(SLOTS[hi]), C(d.theme), C(h), C(parts ? parts.map(p => '• ' + p).join('\n') : '')]);
-    }));
+    ls.forEach(l => {
+      const parts = lectureParts(l.title);
+      sh.heights[sh.rows.length] = 15 * Math.max(lines(l.title, 32), lines(l.theme, 32), parts ? parts.length : 1) + 6;
+      sh.rows.push([CC(l.n), C(`${WEEKDAYS[l.k % 5]} · Day ${l.k + 1}`), C(SLOTS[l.slot]), C(l.theme), C(l.title + (l.carriedFrom != null ? `\n(${carryTxt(l)})` : '')), C(parts ? parts.map(p => '• ' + p).join('\n') : '')]);
+    });
     return sh;
   });
 
-  const syl = { name: 'Full syllabus', cols: [7, 9, 13, 6, 12, 15, 30, 44, 44, 52, 11], freeze: 3, merges: ['A1:K1'], heights: { 0: 26 },
-    rows: [[T(`${rm.name} — full 80-lecture syllabus (basic to advanced)`)], [SUB('Every lecture in teaching order, with its key topics and learning outcome.')],
-      ['Hour', 'Week', 'Level', 'Day', 'Weekday', 'Time', 'Day theme', 'Lecture', 'Key topics', 'Learning outcome', 'Status'].map(H)] };
-  plan.days.forEach((d, k) => {
-    const w = Math.floor(k / 5) + 1, di = k % 5;
-    d.hours.forEach((h, hi) => {
-      const parts = lectureParts(h), outcome = `Explain “${h}” and how it is used in real ${rm.name} work.`;
-      syl.heights[syl.rows.length] = 15 * Math.max(lines(h, 42), parts ? parts.length : 1, lines(outcome, 50)) + 6;
-      syl.rows.push([CC(hourNo(w, di + 1, hi + 1)), CC(w), CC(LEVELS[w - 1][0]), CC(k + 1), C(WEEKDAYS[di]), C(SLOTS[hi]), C(d.theme), C(h),
-        C(parts ? parts.map(p => '• ' + p).join('\n') : ''), C(outcome), CC(done(w, di + 1, hi + 1) ? 'Learned' : 'Not yet')]);
-    });
-  });
+  const syl = { name: 'Full syllabus', cols: [7, 9, 13, 6, 12, 15, 30, 44, 44, 52, 11, 26], freeze: 3, merges: ['A1:L1'], heights: { 0: 26 },
+    rows: [[T(`${rm.name} — full 80-lecture syllabus (basic to advanced)`)], [SUB('Every lecture in teaching order, with its key topics and learning outcome. Lectures the trainer could not cover move to the next day.')],
+      ['Hour', 'Week', 'Level', 'Day', 'Weekday', 'Time', 'Day theme', 'Lecture', 'Key topics', 'Learning outcome', 'Status', 'Note'].map(H)] };
+  sch.days.forEach(d => d.lectures.forEach(l => {
+    const parts = lectureParts(l.title), outcome = `Explain “${l.title}” and how it is used in real ${rm.name} work.`;
+    syl.heights[syl.rows.length] = 15 * Math.max(lines(l.title, 42), parts ? parts.length : 1, lines(outcome, 50)) + 6;
+    syl.rows.push([CC(l.n), CC(d.week), CC(l.level), CC(d.k + 1), C(WEEKDAYS[d.k % 5]), C(SLOTS[l.slot]), C(l.theme), C(l.title),
+      C(parts ? parts.map(p => '• ' + p).join('\n') : ''), C(outcome), CC(done(l.w, l.d, l.i) ? 'Learned' : 'Not yet'), C(carryTxt(l))]);
+  }));
   return [ov, ...weekSheets, syl];
 }
 function downloadXLSX(rm) {
@@ -1158,16 +1236,22 @@ function body(n) {
   if (live != null) return live;
   switch (n.kind) {
     case 'root': {
+      kids(n);
       const m = D.metadata;
       return `<p>This mind map connects <b>${m.allCompanyNames}</b> hiring companies across Hyderabad, Bengaluru and Chennai to the roles freshers target, the skills those roles need, and a complete 80-hour lecture plan for every role and skill.</p>
         <div class="stats"><div class="stat"><b>${m.allCompanyNames}</b><span>Companies</span></div><div class="stat"><b>${m.jobEvidence}</b><span>Verified job postings</span></div><div class="stat"><b>${m.roleRoadmaps + m.skillRoadmaps}</b><span>Roles &amp; skills with a plan</span></div><div class="stat"><b>80 h</b><span>Lectures per role / skill</span></div></div>
         ${liveRootHTML()}
+        <h3>Three teams, three branches</h3>${facts([['Outreach team', `${goBtn(S.nodes.get('root/outreach'), 'Live fresher openings, location-wise openings, verified job openings, drives, internships & hackathons', true)}`],
+          ['Training', `${goBtn(S.nodes.get('root/training'), 'Role roadmaps, skill roadmaps and the timetable builder', true)}`],
+          ['Profile development', `${goBtn(S.nodes.get('root/profile'), 'Resume for the job description and the JD-based profile builder', true)}`]])}
         <h3>The 80-hour plan</h3>${facts([['Duration', '4 weeks · 20 teaching days'], ['Schedule', 'Monday – Friday, 4 one-hour lectures a day'], ['Format', 'Lecture-only — no practice, lab or assignment blocks'], ['Progression', 'Beginner → Intermediate → Advanced → Expert']])}
-        <h3>How to explore</h3>${ul(['Click any node to open its branch; click the circle on the right edge to open or close it.', 'Follow City → Category → Company → Role → Roadmap → Week → Day → Lecture hour.', 'Open “Everything about …” on any role or skill for the complete guide: responsibilities, tools, career path, hiring companies and full syllabus.', 'Tick the circle on a lecture hour to mark it learned — progress is saved in this browser.', 'Press / to search, arrow keys to walk the map, F to fit and C to center.'])}
+        <h3>How to explore</h3>${ul(['Click any node to open its branch; click the circle on the right edge to open or close it.', 'Outreach team → Location-wise openings → City → Category → Company → Role, or Training → Role / Skill roadmaps → Week → Day → Lecture hour.', 'Open “Everything about …” on any role or skill for the complete guide: responsibilities, tools, career path, hiring companies and full syllabus.', 'Tick the circle on a lecture hour to mark it learned — progress is saved in this browser.', 'Press / to search, arrow keys to walk the map, F to fit and C to center.'])}
         <h3>Your learning progress</h3><p><b>${S.learned.size}</b> lecture hour${S.learned.size === 1 ? '' : 's'} marked as learned.</p>
         ${S.learned.size ? '<button class="chip-btn" data-act="reset">Reset progress</button>' : ''}
         ${note(`Company directory checked on ${esc(m.date)}. Today's openings come from the live job feed, refreshed daily — always confirm on the employer’s careers page before applying.`)}`;
     }
+    case 'hub': return hubBody(n);
+    case 'tool': return toolBody(n);
     case 'city': {
       return `<p><b>${d.total}</b> companies in ${esc(d.city)} are grouped into <b>${d.cats.length}</b> categories. Open a category to browse companies alphabetically.</p>
         ${facts(d.cats.map(([c, m]) => [c, `${m.size}`]))}`;
@@ -1225,8 +1309,10 @@ function body(n) {
       const about = info?.about || `${rm.name}, taught from the fundamentals to industry-level depth.`;
       return `<p>${esc(about)}</p>${progressBar(p)}`
         + facts([['Total', '80 lecture hours'], ['Duration', '4 weeks · 20 teaching days'], ['Schedule', 'Monday – Friday, 4 hours a day'], ['Daily timings', SLOTS.join('<br>')],
+          ['If a day is cut short', 'Log the hours taught in the full timetable — untaught lectures carry forward to the next day'],
           ['Format', 'Lectures only — no practice, lab or assignment blocks'], ['Progression', LEVELS.map(l => l[0]).join(' → ')]])
         + `<h3 class="h-row">Weekly timetable <button class="link-btn" data-act="plan">⤢ Expand</button></h3>${timetable(n)}`
+        + (() => { const s = planSchedule(rm); return s.carried ? note(`<b>Reframed:</b> the trainer's hours-taught log carried ${s.carried} lecture hour${s.carried > 1 ? 's' : ''} forward — the timetable now runs ${s.days.length} teaching days. <button class="link-btn" data-act="plan">See the re-arranged timetable</button>`, true) : ''; })()
         + `<div class="btn-row"><button class="chip-btn primary" data-act="plan">⤢ Open full timetable &amp; syllabus</button><button class="chip-btn" data-act="xlsx">Download Excel</button><button class="chip-btn" data-go="${esc(n.id + '/about')}">Complete guide</button></div>`
         + `<div class="b-promo"><b>Combine with other skills?</b><span>${n.kind === 'roadmap' ? `Pick from the ${esc(rm.name)} skills and build one 80-hour timetable with calendar dates.` : `Add ${esc(rm.name)} to a combined 80-hour timetable with other skills and calendar dates.`}</span>`
         + `<button class="chip-btn primary" data-act="build">${n.kind === 'roadmap' ? 'Build timetable from this role' : '＋ Add to combined timetable'}</button></div>`
@@ -1292,6 +1378,47 @@ function body(n) {
   return '';
 }
 
+function hubBody(n) {
+  const t = J.data?.totals;
+  switch (n.data.hub) {
+    case 'outreach':
+      return `<p>Everything the outreach team needs to place freshers: <b>today's live openings</b>, openings <b>city by city</b>, <b>verified job descriptions</b> and fresher <b>drives, internships &amp; hackathons</b> — only roles open to 0 years of experience.</p>`
+        + (t ? `<div class="stats"><div class="stat"><b>${t.jobs}</b><span>Live fresher openings</span></div><div class="stat"><b>${t.companiesWithJobs}</b><span>Companies hiring today</span></div><div class="stat"><b>${S.data.metadata.jobEvidence}</b><span>Verified job openings</span></div><div class="stat"><b>${t.events}</b><span>Drives, internships &amp; hackathons</span></div></div>` : '')
+        + `<div class="btn-row"><button class="chip-btn primary" data-act="jobs" data-f="{}">Open the live job feed</button><button class="chip-btn" data-act="jobs" data-f="${esc(JSON.stringify({ tab: 'events' }))}">Drives, internships &amp; hackathons</button></div>` + (typeof staleNote === 'function' ? staleNote() : '');
+    case 'training':
+      return `<p>Lecture-only training plans: every <b>role</b> and <b>skill</b> has an 80-hour timetable — 4 weeks, Monday – Friday, ${DAY_HOURS} one-hour lectures a day — from beginner to expert. The <b>timetable builder</b> combines several skills into one dated timetable.</p>`
+        + facts([['Role roadmaps', `${S.data.catalog.role.length}`], ['Skill roadmaps', `${S.data.catalog.skill.length}`], ['Day plan', `${DAY_HOURS} lecture hours · 09:00 – 13:15`],
+          ['Short day?', 'Set “Hours taught” under the day in any timetable — untaught lectures carry forward to the next day and the rest of the timetable re-arranges itself']])
+        + `<div class="btn-row"><button class="chip-btn primary" data-act="tool" data-tool="builder">Open the timetable builder</button></div>`;
+    case 'profile':
+      return `<p>Build a job-ready profile from a real job description: tailor the <b>resume</b> on the ATS-proven template, and use the <b>JD-based profile builder</b> to see which skills the job asks for, which ones you are missing, a headline and summary to use, and an 80-hour training plan for the gaps.</p>`
+        + `<div class="btn-row"><button class="chip-btn primary" data-act="tool" data-tool="resume">Tailor my resume</button><button class="chip-btn" data-act="tool" data-tool="profile">JD-based profile builder</button></div>`;
+  }
+  return '';
+}
+function toolBody(n) {
+  switch (n.data.tool) {
+    case 'builder':
+      return `<p>Pick skills from any role, choose the syllabus levels and get one combined <b>80-hour lecture timetable</b> with real calendar dates, holidays and Excel / calendar downloads.</p>`
+        + ul([`${DAY_HOURS} one-hour lectures a day, Monday – Friday`, 'Mark holidays on the calendar — lectures move to the next working day', 'Log the hours the trainer actually taught; untaught lectures carry forward and the timetable is re-arranged automatically'])
+        + `<div class="btn-row"><button class="chip-btn primary" data-act="tool" data-tool="builder">Open the timetable builder</button></div>`;
+    case 'resume':
+      return `<p>Upload your resume (PDF, Word or text), pick a role or a live opening, or paste the job description. The Resume Agent rewrites it on the ATS-proven one-column template and shows the keyword match before and after.</p>`
+        + `<div class="btn-row"><button class="chip-btn primary" data-act="tool" data-tool="resume">Open the Resume studio</button></div>`;
+    case 'profile':
+      return `<p>Paste a job description or pick a live opening. The profile builder lists the skills it asks for — ticked when your resume already shows them — and gives you the closest role roadmaps, a headline and summary, certifications to aim for, and a one-click 80-hour timetable for the missing skills.</p>`
+        + `<div class="btn-row"><button class="chip-btn primary" data-act="tool" data-tool="profile">Open the profile builder</button></div>`;
+    case 'bulk':
+      return `<p>Upload many resumes at once, tailor each one to the same job description or to its best-matching role, and download every PDF and Word file plus an Excel report in one ZIP.</p>`
+        + `<div class="btn-row"><button class="chip-btn primary" data-act="tool" data-tool="bulk">Open bulk tailoring</button></div>`;
+  }
+  return '';
+}
+function openTool(tool) {
+  if (tool === 'builder') openBuilder();
+  else openResume({ tab: { resume: 'single', profile: 'profile', bulk: 'bulk' }[tool] });
+}
+
 let panelFor = null;
 function renderPanel() {
   const n = S.sel; if (!n) return;
@@ -1325,6 +1452,7 @@ panel.addEventListener('click', e => {
     case 'buildrole': openBuilder({ role: t.dataset.role }); break;
     case 'jobs': openJobs(JSON.parse(t.dataset.f || '{}')); break;
     case 'resume': openResume(JSON.parse(t.dataset.f || '{}')); break;
+    case 'tool': openTool(t.dataset.tool); break;
     case 'reset': if (confirm('Clear all learned lecture hours?')) { S.learned.clear(); saveLearned(); update(); } break;
   }
 });
@@ -1337,39 +1465,58 @@ function openPlan(rm, focus = {}) {
   S.modal = { rm, kind: kindOf(rm), tab: 'tt', focus: { w: focus.w, d: focus.d, i: focus.i } };
   modal.hidden = false;
   renderModal();
-  if (focus.w) modalCard.querySelector('#mw-' + focus.w)?.scrollIntoView({ block: 'start' });
+  if (focus.w) (modalCard.querySelector('.g-c.focus')?.closest('.m-week') || modalCard.querySelector('#mw-' + focus.w))?.scrollIntoView({ block: 'start' });
   modalCard.querySelector('.m-close').focus({ preventScroll: true });
 }
 function closePlan() { S.modal = null; modal.hidden = true; modalCard.innerHTML = ''; }
 
+const weekLevels = days => { const ls = uniq(days.flatMap(d => d.lectures.map(l => l.level))); return ls.length > 1 ? `${ls[0]} → ${ls.at(-1)}` : ls[0] || 'Carry-forward'; };
+const dayThemes = d => uniq(d.lectures.map(l => l.theme)).join(' / ') || (d.cap === 0 ? 'No class held' : '');
+const carryTag = l => (l.carriedFrom != null ? `<em class="g-carry" title="Not taught on day ${l.carriedFrom + 1} — carried forward">↻ from Day ${l.carriedFrom + 1}</em>` : '');
+const movedCell = d => `<div class="g-c g-moved"><b>Not taught</b><small>${d.cap === 0 ? 'No class — every lecture moved on' : 'Moved to the next day'}</small></div>`;
+function reframeNote(sch, resetAttr) {
+  const logged = sch.days.filter(d => d.logged != null);
+  if (!logged.length) return note(`Trainer took fewer hours on a day? Set <b>Hours taught</b> under that day — the untaught lectures move to the start of the next day and the whole timetable re-arranges itself, still ${DAY_HOURS} hours a day, Monday – Friday.`);
+  const taught = logged.reduce((a, d) => a + d.cap, 0);
+  return `<div class="note reframe"><b>Reframed timetable.</b> ${logged.length} day${logged.length > 1 ? 's' : ''} logged · ${taught} of ${logged.length * DAY_HOURS} hours taught`
+    + (sch.carried ? ` · <b>${sch.carried} lecture hour${sch.carried > 1 ? 's' : ''} carried forward</b> · the plan now runs <b>${sch.days.length} teaching days</b>${sch.extraDays ? ` (${sch.extraDays} more than planned)` : ''}` : ' · nothing carried forward')
+    + `. <button class="link-btn" ${resetAttr}>Clear the hours-taught log</button></div>`;
+}
 function modalTimetable({ rm, focus }) {
-  return planOf(rm).weeks.map((days, wi) => {
-    const w = wi + 1, wp = progressOf({ kind: 'week', data: { rm, w } });
-    let g = `<div class="g-h">Time</div>${days.map((_, di) => `<div class="g-h">${WEEKDAYS[di]}<small>Day ${dayNo(w, di + 1)}</small></div>`).join('')}`
-      + `<div class="g-t">Theme</div>${days.map(d => `<div class="g-theme">${esc(d.theme)}</div>`).join('')}`;
+  const sch = planSchedule(rm);
+  return reframeNote(sch, 'data-mact="untaught"') + sch.weeks.map((days, wi) => {
+    const w = wi + 1, ls = days.flatMap(d => d.lectures), done = ls.filter(l => S.learned.has(lectureKey(rm, l.w, l.d, l.i))).length;
+    let g = `<div class="g-h">Time</div>${days.map(d => `<div class="g-h">${WEEKDAYS[d.k % 5]}<small>Day ${d.k + 1}</small>${taughtSelect(`data-mtaught="${d.id}"`, d)}</div>`).join('')}`
+      + `<div class="g-t">Theme</div>${days.map(d => `<div class="g-theme">${esc(dayThemes(d))}</div>`).join('')}`;
     SLOTS.forEach((slot, hi) => {
       if (hi === 2) g += '<div class="g-break">Break · 11:00 – 11:15</div>';
-      g += `<div class="g-t">${slot}<small>Lecture ${hi + 1}</small></div>` + days.map((d, di) => {
-        const ref = `${w}|${di + 1}|${hi + 1}`, ok = S.learned.has(lectureKey(rm, w, di + 1, hi + 1));
-        const foc = focus.w === w && focus.d === di + 1 && (!focus.i || focus.i === hi + 1);
-        return `<div class="g-c${ok ? ' done' : ''}${foc ? ' focus' : ''}"><span class="g-no">Hour ${hourNo(w, di + 1, hi + 1)}</span>`
-          + `<button class="g-title" data-mgo="${ref}" title="Show this lecture on the map">${esc(d.hours[hi])}</button>`
+      g += `<div class="g-t">${slot}<small>Lecture ${hi + 1}</small></div>` + days.map(d => {
+        const l = d.lectures[hi];
+        if (!l) return d.logged != null && hi >= d.cap ? movedCell(d) : '<div class="g-c g-empty"></div>';
+        const ref = `${l.w}|${l.d}|${l.i}`, ok = S.learned.has(lectureKey(rm, l.w, l.d, l.i));
+        const foc = focus.w === l.w && focus.d === l.d && (!focus.i || focus.i === l.i);
+        return `<div class="g-c${ok ? ' done' : ''}${foc ? ' focus' : ''}${l.carriedFrom != null ? ' carried' : ''}"><span class="g-no">Hour ${l.n}${carryTag(l)}</span>`
+          + `<button class="g-title" data-mgo="${ref}" title="Show this lecture on the map">${esc(l.title)}</button>`
           + `<button class="g-chk" data-mlearn="${ref}" title="${ok ? 'Learned — click to undo' : 'Mark as learned'}">${ok ? '✓' : ''}</button></div>`;
       }).join('');
     });
-    return `<section class="m-week" id="mw-${w}"><div class="m-week-h"><div><h3>Week ${w} · ${LEVELS[wi][0]} <small>${LEVELS[wi][1]}</small></h3>`
-      + `<p>${WEEK_DESC[wi]} Days ${dayNo(w, 1)}–${dayNo(w, 5)} · lecture hours ${hourNo(w, 1, 1)}–${hourNo(w, 5, 4)}.</p></div>`
-      + `<div class="m-wp">${bar(wp.done, 20)}<small>${wp.done} / 20 hours learned</small></div></div><div class="m-gridwrap"><div class="m-grid">${g}</div></div></section>`;
+    const range = ls.length ? ` · lecture hours ${ls[0].n}–${ls.at(-1).n}` : '';
+    return `<section class="m-week" id="mw-${w}"><div class="m-week-h"><div><h3>Week ${w} · ${weekLevels(days)}</h3>`
+      + `<p>${wi < 4 ? WEEK_DESC[wi] + ' ' : 'Lectures carried forward to finish the plan. '}Days ${days[0].k + 1}–${days.at(-1).k + 1}${range}.</p></div>`
+      + `<div class="m-wp">${bar(done, ls.length || 1)}<small>${done} / ${ls.length} hours learned</small></div></div>`
+      + `<div class="m-gridwrap"><div class="m-grid" style="grid-template-columns:120px repeat(${days.length},minmax(150px,1fr))">${g}</div></div></section>`;
   }).join('');
 }
 function modalSyllabus({ rm }) {
-  return planOf(rm).weeks.map((days, wi) => {
+  const sch = planSchedule(rm);
+  return sch.weeks.map((days, wi) => {
     const w = wi + 1;
-    return `<section class="m-week" id="ms-${w}"><div class="m-week-h"><div><h3>Week ${w} · ${LEVELS[wi][0]} <small>${LEVELS[wi][1]}</small></h3><p>${WEEK_DESC[wi]}</p></div></div>`
-      + `<div class="m-days">${days.map((d, di) => `<article class="m-day"><h4>${WEEKDAYS[di]} · Day ${dayNo(w, di + 1)}<span>${esc(d.theme)}</span></h4><ol start="${hourNo(w, di + 1, 1)}">${d.hours.map((h, hi) => {
-        const parts = lectureParts(h), ok = S.learned.has(lectureKey(rm, w, di + 1, hi + 1));
-        return `<li class="${ok ? 'done' : ''}"><b>${esc(h)}</b><small>${SLOTS[hi]}${ok ? ' · ✓ learned' : ''}</small>${parts ? ul(parts) : ''}</li>`;
-      }).join('')}</ol></article>`).join('')}</div></section>`;
+    return `<section class="m-week" id="ms-${w}"><div class="m-week-h"><div><h3>Week ${w} · ${weekLevels(days)}</h3><p>${wi < 4 ? WEEK_DESC[wi] : 'Lectures carried forward to finish the plan.'}</p></div></div>`
+      + `<div class="m-days">${days.map(d => `<article class="m-day"><h4>${WEEKDAYS[d.k % 5]} · Day ${d.k + 1}${d.logged != null ? ` <em class="tl-tag${d.cap < DAY_HOURS ? ' short' : ''}">${d.cap}/${DAY_HOURS} h taught</em>` : ''}<span>${esc(dayThemes(d))}</span></h4>`
+        + (d.lectures.length ? `<ol start="${d.lectures[0].n}">${d.lectures.map(l => {
+          const parts = lectureParts(l.title), ok = S.learned.has(lectureKey(rm, l.w, l.d, l.i));
+          return `<li class="${ok ? 'done' : ''}"><b>${esc(l.title)}</b><small>${SLOTS[l.slot]}${ok ? ' · ✓ learned' : ''}${l.carriedFrom != null ? ` · ↻ carried forward from Day ${l.carriedFrom + 1}` : ''}</small>${parts ? ul(parts) : ''}</li>`;
+        }).join('')}</ol>` : '<p class="muted">No class held — the lectures moved to the next day.</p>') + '</article>').join('')}</div></section>`;
   }).join('');
 }
 function renderModal(keepScroll) {
@@ -1379,13 +1526,14 @@ function renderModal(keepScroll) {
   const tabs = [['tt', 'Week-wise timetable'], ['syl', 'Full syllabus'], ['about', kind === 'roadmap' ? 'About the role' : 'About the skill']];
   const content = tab === 'tt' ? modalTimetable(M) : tab === 'syl' ? modalSyllabus(M) : tab === 'all' ? modalTimetable(M) + `<h2 class="m-print-h">Full syllabus</h2>` + modalSyllabus(M)
     : `<div class="p-body m-about">${guideHTML(rm, kind, false)}</div>`;
+  const sch = planSchedule(rm), nw = sch.weeks.length;
   modalCard.innerHTML = `<header class="m-head"><div class="m-headl"><span class="pill k-${kind}">${kind === 'roadmap' ? 'Role roadmap' : 'Skill roadmap'}</span>`
-    + `<h2 id="mTitle">${esc(rm.name)} — 80-hour lecture timetable</h2><p>4 weeks · Monday – Friday · 4 one-hour lectures a day (09:00 – 13:15) · lecture-only, no practice, lab or assignment blocks</p>`
+    + `<h2 id="mTitle">${esc(rm.name)} — 80-hour lecture timetable</h2><p>${nw} weeks · ${sch.days.length} teaching days${sch.carried ? ` (reframed — ${sch.carried} h carried forward)` : ''} · Monday – Friday · ${DAY_HOURS} one-hour lectures a day (09:00 – 13:15) · lecture-only, no practice, lab or assignment blocks</p>`
     + `<div class="m-prog">${bar(p.done, TOTAL_HOURS)}<small>${p.done} of 80 lecture hours learned</small></div></div>`
     + `<div class="m-actions"><button class="chip-btn primary" data-mact="xlsx"><svg class="ico" viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download Excel</button><button class="chip-btn" data-mact="print">Print / PDF</button>`
     + `<button class="m-close" data-mact="close" title="Close (Esc)" aria-label="Close">×</button></div></header>`
     + `<div class="m-bar"><div class="m-tabs">${tabs.map(([k, l]) => `<button class="m-tab${tab === k ? ' on' : ''}" data-mtab="${k}">${l}</button>`).join('')}</div>`
-    + (tab === 'about' ? '' : `<div class="m-weeknav">${LEVELS.map(([l], wi) => `<button data-mweek="${wi + 1}">Week ${wi + 1} · ${l}</button>`).join('')}</div>`) + '</div>'
+    + (tab === 'about' ? '' : `<div class="m-weeknav">${sch.weeks.map((days, wi) => `<button data-mweek="${wi + 1}">Week ${wi + 1} · ${esc(weekLevels(days).split(' → ').at(-1))}</button>`).join('')}</div>`) + '</div>'
     + `<div class="m-body">${content}</div>`;
   modalCard.querySelector('.m-body').scrollTop = top;
 }
@@ -1407,6 +1555,7 @@ modal.addEventListener('click', e => {
   const t = e.target.closest('[data-mact],[data-mtab],[data-mweek],[data-mlearn],[data-mgo],[data-reveal]'); if (!t) return;
   const M = S.modal, ds = t.dataset;
   if (ds.mact === 'close') closePlan();
+  else if (ds.mact === 'untaught') { if (confirm(`Clear every hours-taught entry for ${M.rm.name} and go back to the original timetable?`)) { clearTaught('rm:' + M.rm.slug); renderModal(true); renderPanel(); } }
   else if (ds.mact === 'xlsx') downloadXLSX(M.rm);
   else if (ds.mact === 'print') printModal();
   else if (ds.mtab) { M.tab = ds.mtab; renderModal(); }
@@ -1420,6 +1569,11 @@ modal.addEventListener('click', e => {
     closePlan(); $('#hint').classList.add('gone');
     revealKeys([...a.keys, 'w:' + w, 'd:' + d, 'h:' + i], false, a.from);
   } else if (ds.reveal) { closePlan(); revealKeys(JSON.parse(ds.reveal), true); }
+});
+modal.addEventListener('change', e => {
+  const s = e.target.closest('[data-mtaught]'); if (!s || !S.modal) return;
+  setTaught('rm:' + S.modal.rm.slug, s.dataset.mtaught, s.value);
+  renderModal(true); renderPanel();
 });
 
 /* ------------------------------------------------------------------ boot */

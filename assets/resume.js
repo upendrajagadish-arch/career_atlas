@@ -340,17 +340,81 @@ function agentTab() {
   </section></div>`;
 }
 
+/* ------------------------------------------------------------------ JD-based profile builder */
+const ROLE_FIT = new Map();
+function roleFits(T) {
+  const want = new Map(T.kws.filter(k => !k.soft).map(k => [k.name, k.w])), total = [...want.values()].reduce((a, w) => a + w, 0) || 1;
+  return Object.keys(S.ROLE).map(slug => {
+    if (!ROLE_FIT.has(slug)) ROLE_FIT.set(slug, new Set(RE.target({ role: slug }).kws.filter(k => !k.soft).map(k => k.name)));
+    const set = ROLE_FIT.get(slug);
+    return { slug, fit: Math.round(100 * [...want].reduce((a, [k, w]) => a + (set.has(k) ? w : 0), 0) / total) };
+  }).filter(x => x.fit >= 20).sort((a, b) => b.fit - a.fit).slice(0, 4);
+}
+const mapBtn = (keys, label, cls) => `<button class="chip ${cls}" data-r="map:${esc(JSON.stringify(keys))}">${esc(label)}</button>`;
+function profilePlan() {
+  const T = RE.target(specOf(U.t)), it = cur(), m = it ? RE.match(it.src, T) : null;
+  const hard = T.kws.filter(k => !k.soft), soft = T.kws.filter(k => k.soft);
+  const have = m ? new Set(m.matched.map(k => k.name)) : null;
+  const skills = hard.slice(0, 20).map(k => ({ ...k, ok: have ? have.has(k.name) : null, slugs: skillSlugsFor(k.name) }));
+  const gaps = uniq(skills.filter(s => s.ok !== true).flatMap(s => s.slugs)).slice(0, 6);
+  return { T, it, m, skills, soft, gaps, roles: roleFits(T) };
+}
+function profileHTML(p) {
+  const { T, it, m, skills, soft, gaps, roles } = p, top = skills.filter(s => s.ok !== false).slice(0, 4).map(s => s.name);
+  const P = it ? RE.profile(it.src) : null, now = new Date().getFullYear();
+  const who = P?.deg ? `${P.deg}${P.field ? ` ${P.field}` : ''} ${P.grad && P.grad > now ? `student (graduating ${P.grad})` : 'graduate'}` : 'Fresher';
+  const summary = `${who} targeting ${T.title} roles${T.company ? ` at ${T.company}` : ''}, with hands-on project work in ${top.length ? top.join(', ') : 'the core skills of the role'}. `
+    + `${P?.projects.length ? `Built ${P.projects.length} project${P.projects.length > 1 ? 's' : ''} including ${P.projects[0].title}. ` : 'Built end-to-end projects that show the skills above with measurable results. '}`
+    + `Quick learner with a strong foundation in ${soft.length ? soft.slice(0, 2).map(k => k.name.toLowerCase()).join(' and ') : 'problem solving and teamwork'}.`;
+  const missing = skills.filter(s => s.ok === false), haveN = skills.filter(s => s.ok).length;
+  const row = s => `<li class="pf-sk ${s.ok == null ? '' : s.ok ? 'ok' : 'miss'}"><span>${s.ok == null ? '•' : s.ok ? '✓' : '!'}</span><b>${esc(s.name)}</b>${s.slugs.length ? s.slugs.slice(0, 2).map(sl => mapBtn(['skills', 'sr:' + sl], `${S.SKILL[sl].name} roadmap`, 'k-skill')).join('') : '<small class="muted">no roadmap in the app</small>'}</li>`;
+  const ideas = [
+    `End-to-end project with ${top.slice(0, 3).join(', ') || 'the core tools'}: build it, test it, deploy it and put the live link and GitHub repo on your resume.`,
+    `Rebuild one responsibility from this job description${T.company ? ` at ${T.company}` : ''} as a small demo, and measure one number (users, speed, accuracy, hours saved).`,
+    missing.length ? `Close the gaps: add ${missing.slice(0, 3).map(s => s.name).join(', ')} to a project so the skill is backed by real work, not just listed.` : 'Write a short case study (README or blog) for your best project — interviewers ask about it first.',
+  ];
+  return `<div class="pf-out">
+    <section class="pf-card pf-head"><div><span class="pill k-jd">Target profile</span><h3>${esc(T.title)}${T.company ? ` <small>at ${esc(T.company)}</small>` : ''}</h3>
+      <p class="muted">${T.years ? `Asks for ${T.years}+ years — as a fresher, lead with projects and internships.` : 'Fresher-friendly: no years of experience asked for.'}</p></div>
+      ${m ? `<div class="pf-score ${cls(m.score)}"><b>${m.score}%</b><small>match with ${esc(short(it.src.name || 'your resume', 22))}</small></div>` : ''}</section>
+    <section class="pf-card"><h4>Skills this job needs <small>${m ? `${haveN} of ${skills.length} already on your resume` : 'upload a resume to see which ones you already have'}</small></h4><ul class="pf-skills">${skills.map(row).join('')}</ul>
+      ${soft.length ? `<p class="rs-hint">Soft skills to show in bullets: ${soft.map(k => esc(k.name)).join(', ')}.</p>` : ''}
+      <div class="rs-row"><button class="chip-btn primary" data-r="ptt"${gaps.length ? '' : ' disabled'}>＋ 80-hour timetable for ${m ? 'the missing' : 'these'} skills${gaps.length ? ` (${gaps.length})` : ''}</button>${it ? '<button class="chip-btn" data-r="tab:single">Tailor my resume to this JD</button>' : '<button class="chip-btn" data-r="upload">Upload my resume to compare</button>'}</div></section>
+    ${roles.length ? `<section class="pf-card"><h4>Closest role roadmaps</h4><div class="chips">${roles.map(r => mapBtn(['roles', 'rr:' + r.slug], `${S.ROLE[r.slug].name} · ${r.fit}%`, 'k-roadmap')).join('')}</div></section>` : ''}
+    <section class="pf-card"><h4>Profile headline &amp; summary</h4><p class="pf-line"><b>${esc(T.title)}</b>${top.length ? ` | ${esc(top.join(' · '))}` : ''}</p><p class="pf-line">${esc(summary)}</p><p class="rs-hint">Use these on your resume, LinkedIn and Naukri profile. Keep only the skills you have really used.</p></section>
+    ${T.certs.length ? `<section class="pf-card"><h4>Certifications that help</h4><ul class="rs-list">${T.certs.map(c => `<li>${esc(c)}</li>`).join('')}</ul></section>` : ''}
+    <section class="pf-card"><h4>Project ideas for this profile</h4><ul class="rs-list">${ideas.map(i => `<li>${esc(i)}</li>`).join('')}</ul></section></div>`;
+}
+function profileTab() {
+  const it = cur(), t = U.t, job = t.jobKey && J.byKey.get(t.jobKey), ready = t.role || t.jd.trim().length >= 20;
+  const left = `<aside class="rs-side">
+    <section class="rs-step"><h4><i>1</i>Job description</h4>
+      <label class="rs-l">Role<select id="rsRole" class="b-input">${roleOptions(t.role)}</select></label>
+      <label class="rs-l">Live opening <small>optional</small><select id="rsJob" class="b-input">${jobOptions(t)}</select></label>
+      <div class="rs-2"><label class="rs-l">Job title<input id="rsTitleIn" class="b-input" value="${esc(t.title)}" placeholder="optional"></label><label class="rs-l">Company<input id="rsCompany" class="b-input" value="${esc(t.company)}" placeholder="optional"></label></div>
+      <label class="rs-l">Job description<textarea id="rsJD" class="b-input rs-jd" placeholder="Paste the job description — responsibilities, required skills, qualifications…">${esc(t.jd)}</textarea></label>
+      ${job ? `<p class="rs-hint">Filled from the live opening — paste the full text from the <a href="${esc(job.url)}" target="_blank" rel="noopener">job page ↗</a> for a sharper profile.</p>` : ''}
+    </section>
+    <section class="rs-step"><h4><i>2</i>Compare with a resume <small>optional</small></h4>
+      ${U.list.length ? `<select id="rsPick" class="b-input">${U.list.map(x => `<option value="${x.id}"${x.id === U.curId ? ' selected' : ''}>${esc(x.src.name || 'Unnamed')}</option>`).join('')}</select>` : '<p class="rs-hint">No resume yet — the profile still lists every skill to build.</p>'}
+      <div class="rs-row"><button class="chip-btn" data-r="upload">Upload a resume</button><button class="chip-btn" data-r="sample">Try the sample</button></div>
+      <button class="chip-btn primary rs-go" data-r="pbuild">${ICON_SPARK}Build profile</button>
+    </section></aside>`;
+  return `<div class="rs-grid pf-grid">${left}<section class="rs-center pf-center">${ready ? profileHTML(profilePlan())
+    : `<div class="rs-empty"><h3>Build a profile from any job description</h3><p>Pick a role or a live opening, or paste a job description, then press <b>Build profile</b>. You get the skills the job needs (and which ones your resume already shows), the closest role roadmaps, a ready headline and summary, certifications, project ideas and an 80-hour timetable for the gaps.</p></div>`}</section></div>`;
+}
+
 /* ------------------------------------------------------------------ render */
 const COLS = ['.rs-side', '.rs-report', '.rs-center'];
 function render(keep) {
   const body = card.querySelector('.m-body'), top = keep && body ? body.scrollTop : 0, n = U.list.length;
   U.colTops = keep ? COLS.map(s => card.querySelector(s)?.scrollTop || 0) : null;
-  const tabs = [['single', 'Tailor one resume'], ['bulk', `Bulk tailor${n ? ` (${n})` : ''}`], ['template', 'Template & tips'], ['agent', 'AI agent']];
+  const tabs = [['single', 'Tailor one resume'], ['profile', 'JD-based profile builder'], ['bulk', `Bulk tailor${n ? ` (${n})` : ''}`], ['template', 'Template & tips'], ['agent', 'AI agent']];
   card.innerHTML = `<header class="m-head"><div class="m-headl"><span class="pill k-resume">Resume studio · Resume Agent</span><h2 id="rsTitle">Tailor your resume to any role or job description</h2>
       <p>ATS-proven one-column template · upload PDF, Word or text · tailor one resume or a whole batch · download PDF, Word or one ZIP</p></div>
     <div class="m-actions"><button class="chip-btn primary" data-r="upload">${ICON_UP}Upload resumes</button><button class="m-close" data-r="close" aria-label="Close">✕</button></div></header>
     <div class="m-bar"><nav class="m-tabs">${tabs.map(([k, l]) => `<button class="m-tab${U.tab === k ? ' on' : ''}" data-r="tab:${k}">${esc(l)}</button>`).join('')}</nav>${busyHTML()}</div>
-    <div class="m-body rs-body${U.tab === 'single' ? ' rs-fixed' : ''}">${U.msg ? note(U.msg.text, U.msg.warn) : ''}${{ single: singleTab, bulk: bulkTab, template: templateTab, agent: agentTab }[U.tab]()}</div>`;
+    <div class="m-body rs-body${U.tab === 'single' ? ' rs-fixed' : ''}">${U.msg ? note(U.msg.text, U.msg.warn) : ''}${{ single: singleTab, profile: profileTab, bulk: bulkTab, template: templateTab, agent: agentTab }[U.tab]()}</div>`;
   card.querySelector('.m-body').scrollTop = top;
   if (U.colTops) COLS.slice(0, 2).forEach((s, i) => { const c = card.querySelector(s); if (c) c.scrollTop = U.colTops[i]; });
   if (U.tab === 'single') renderPreview();
@@ -378,7 +442,7 @@ async function addFiles(list) {
 }
 function addModel(r) {
   U.list.push({ id: r.id, src: r, out: null }); U.curId = r.id; U.sel.add(r.id); U.view = 'original'; U.edit = false;
-  if (U.tab !== 'bulk') U.tab = 'single';
+  if (U.tab !== 'bulk' && U.tab !== 'profile') U.tab = 'single';
   save();
 }
 function removeItems(ids) {
@@ -508,7 +572,7 @@ el.addEventListener('click', e => {
     case 'close': closeResume(); return;
     case 'tab': U.tab = arg; U.edit = false; U.msg = null; render(); return;
     case 'upload': fileIn.value = ''; fileIn.click(); return;
-    case 'sample': { const ex = U.list.find(x => x.src.file === 'Sample resume'); if (ex) { U.curId = ex.id; U.view = ex.out ? 'tailored' : 'original'; if (U.tab !== 'bulk') U.tab = 'single'; } else addModel(sampleResume()); U.msg = null; render(); return; }
+    case 'sample': { const ex = U.list.find(x => x.src.file === 'Sample resume'); if (ex) { U.curId = ex.id; U.view = ex.out ? 'tailored' : 'original'; if (U.tab !== 'bulk' && U.tab !== 'profile') U.tab = 'single'; } else addModel(sampleResume()); U.msg = null; render(); return; }
     case 'blank': { const r = RE.fromMarkup(TEMPLATE_MD); r.file = 'ATS template'; addModel(r); U.edit = 'src'; U.msg = { text: 'Replace the &lt;placeholders&gt; with your details, press <b>Apply changes</b>, then tailor it.' }; render(); return; }
     case 'view': U.view = arg; U.edit = false; render(true); return;
     case 'edit': U.edit = arg; render(true); card.querySelector('#rsEdit')?.focus(); return;
@@ -528,6 +592,9 @@ el.addEventListener('click', e => {
     case 'tpldl': { const r = RE.fromMarkup(TEMPLATE_MD); saveBlob(arg === 'pdf' ? RE.pdfBlob(r, U.prefs.tpl, { bold: [] }).blob : RE.docxBlob(r, U.prefs.tpl, { bold: [] }), `ATS_Resume_Template.${arg}`); return; }
     case 'aisave': readAI(); saveAI(); if (aiReady()) U.prefs.engine = 'ai'; savePrefs(); U.msg = { text: aiReady() ? 'Saved. AI-assisted mode is selected in the Tailor tabs.' : 'Saved.' }; render(true); return;
     case 'aitest': testAI(); return;
+    case 'pbuild': render(true); return;
+    case 'map': { const keys = JSON.parse(arg); closeResume(); revealKeys(keys, true); return; }
+    case 'ptt': { const p = profilePlan(); closeResume(); openBuilder({ skills: p.gaps, title: `${p.T.title} — JD skills` }); return; }
     case 'aiclear': U.ai.key = ''; saveAI(); U.prefs.engine = 'builtin'; savePrefs(); render(true); return;
   }
 });
