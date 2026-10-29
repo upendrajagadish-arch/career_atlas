@@ -7,11 +7,17 @@
  *   node scripts/update-jobs.js --no-events     skip Google News hiring events
  *   node scripts/update-jobs.js --only=amazon   update one company (by id) — for debugging
  *
+ * The deployed site does not see a local run. GitHub Actions
+ * (.github/workflows/daily-job-scan.yml) runs this every day and pushes
+ * data/jobs.json, which Vercel redeploys. SCAN_TRIGGER is set to
+ * "schedule" or "workflow_dispatch" there; a local run records "local".
+ *
  * Optional aggregator keys (environment variables or scripts/config.json):
  *   ADZUNA_APP_ID + ADZUNA_APP_KEY   https://developer.adzuna.com  (India job aggregator)
  *   JOOBLE_KEY                       https://jooble.org/api/about
  *
- * Writes data/jobs.json (read by the app) and data/ats-map.json (discovered boards).
+ * Writes data/jobs.json (read by the app), data/ats-map.json (discovered boards)
+ * and data/scan-status.json (last scanned time, trigger and outcome).
  * Needs Node 18+ (built-in fetch). No npm packages.
  */
 'use strict';
@@ -25,6 +31,7 @@ const SOURCES = path.join(__dirname, 'job-sources.json');
 const CONFIG = path.join(__dirname, 'config.json');
 const OUT = path.join(DATA_DIR, 'jobs.json');
 const ATS_MAP = path.join(DATA_DIR, 'ats-map.json');
+const STATUS = path.join(DATA_DIR, 'scan-status.json');
 const LOG = path.join(DATA_DIR, 'update.log');
 
 // Skill keywords per opening (same lexicon as the Resume studio) so a resume can be tailored to it
@@ -56,6 +63,47 @@ const today = new Date().toISOString().slice(0, 10);
 const readJSON = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return d; } };
 const uniq = a => [...new Set(a.filter(Boolean))];
 const norm = s => String(s || '').toLowerCase().replace(/[’']/g, '').replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+function scanTrigger() {
+  const t = String(process.env.SCAN_TRIGGER || 'local').trim();
+  return t === 'schedule' || t === 'workflow_dispatch' || t === 'local' ? t : (t.slice(0, 40) || 'local');
+}
+function writeScanStatus(fields) {
+  const status = {
+    ok: false,
+    lastScanned: new Date().toISOString(),
+    trigger: scanTrigger(),
+    date: today,
+    durationSec: Math.round((Date.now() - t0) / 1000),
+    ...fields,
+  };
+  status.ok = !!fields.ok;
+  fs.writeFileSync(STATUS, JSON.stringify(status, null, 2) + '\n');
+  return status;
+}
+function urlKey(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  try {
+    const u = new URL(raw);
+    return (u.origin + u.pathname).replace(/\/+$/, '').toLowerCase();
+  } catch {
+    return raw.replace(/\/+$/, '').toLowerCase();
+  }
+}
+// Same company + title + city, or the same apply link (ignoring tracking query params).
+function dedupeJobs(jobs) {
+  const seen = new Set();
+  const out = [];
+  for (const j of jobs) {
+    const keys = [`id:${j.cid || norm(j.company)}|${norm(j.title)}|${j.city}`];
+    const u = urlKey(j.url);
+    if (u) keys.push('url:' + u);
+    if (keys.some(k => seen.has(k))) continue;
+    keys.forEach(k => seen.add(k));
+    out.push(j);
+  }
+  return out;
+}
 const stripHTML = s => String(s || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&rsquo;/g, "'").replace(/\s+/g, ' ').trim();
 
 /* ------------------------------------------------------------------ http */
@@ -427,10 +475,11 @@ const gnews = q => `https://news.google.com/rss/search?q=${encodeURIComponent(q)
 function newsName(c) { return c.name.replace(/\s*\(.*?\)\s*/g, ' ').replace(/\s+in India$/i, '').trim(); }
 
 /* ------------------------------------------------------------------ main */
-if (require.main !== module) module.exports = { eventType, assess, minYears };
+if (require.main !== module) module.exports = { eventType, assess, minYears, dedupeJobs };
 else (async () => {
   const dataset = readJSON(DATASET, null);
   if (!dataset) { console.error('Dataset not found: ' + DATASET); process.exit(1); }
+  log(`Job scan started (${scanTrigger()})`);
   const sources = readJSON(SOURCES, { boards: [] });
   const cfg = readJSON(CONFIG, {});
   const prev = readJSON(OUT, { jobs: [], events: [] });
@@ -526,9 +575,8 @@ else (async () => {
     };
   }
 
-  // de-duplicate (same company + title + city)
-  const seenJob = new Set();
-  const finalJobs = jobs.filter(j => { const k = `${j.cid || j.company}|${norm(j.title)}|${j.city}`; if (seenJob.has(k)) return false; seenJob.add(k); return true; })
+  // de-duplicate (same company + title + city, and the same apply URL)
+  const finalJobs = dedupeJobs(jobs)
     .sort((a, b) => (b.first || '').localeCompare(a.first || '') || (b.posted || '').localeCompare(a.posted || '') || a.company.localeCompare(b.company));
   for (const cov of Object.values(coverage)) cov.jobs = 0;
   for (const j of finalJobs) if (j.cid && coverage[j.cid]) coverage[j.cid].jobs++;
@@ -578,17 +626,38 @@ else (async () => {
   // Jobs found on the first day of the feed are the baseline, not "new".
   const baselineDate = prev.baselineDate || (prev.jobs.length ? prev.date : today);
   const firstRun = baselineDate === today;
+  const scannedAt = new Date().toISOString();
   const result = {
-    generatedAt: new Date().toISOString(), date: today, baselineDate, firstRun, durationSec: Math.round((Date.now() - t0) / 1000),
+    generatedAt: scannedAt, lastScanned: scannedAt, trigger: scanTrigger(), date: today, baselineDate, firstRun, durationSec: Math.round((Date.now() - t0) / 1000),
     sources: { boards: uniq(Object.values(coverage).flatMap(c => c.boards.map(b => b.label))), aggregators: agg.used, news: 'Google News (India edition)' },
     totals: { jobs: finalJobs.length, newToday: firstRun ? 0 : finalJobs.filter(j => j.first === today).length, companiesWithJobs: new Set(finalJobs.map(j => j.cid).filter(Boolean)).size, trackedCompanies: tracked.length, events: events.length, requests: stats.requests },
     coverage, errors: errors.slice(0, 200), jobs: finalJobs, events,
   };
   if (opt('only')) { console.log(JSON.stringify({ ...result, coverage: undefined }, null, 1).slice(0, 4000)); return; }
-  fs.writeFileSync(OUT, JSON.stringify(result));
+  if (prev.jobs.length >= 10 && finalJobs.length === 0) {
+    const msg = `Scan returned no openings (previous feed has ${prev.jobs.length}). Kept the previous feed.`;
+    log(msg);
+    writeScanStatus({ ok: false, error: msg, previousJobs: prev.jobs.length, errorCount: errors.length });
+    fs.appendFileSync(LOG, logLines.join('\n') + '\n\n');
+    process.exit(1);
+  }
+  const tmp = OUT + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(result));
+  fs.renameSync(tmp, OUT);
   log(`Done in ${result.durationSec}s · ${result.totals.jobs} openings (${result.totals.newToday} new) at ${result.totals.companiesWithJobs} companies · ${events.length} events · ${errors.length} errors`);
+  writeScanStatus({
+    ok: true, lastScanned: scannedAt, durationSec: result.durationSec, totals: result.totals,
+    errorCount: errors.length, previousJobs: prev.jobs.length,
+  });
   fs.appendFileSync(LOG, logLines.join('\n') + '\n\n');
-})().catch(e => { console.error(e); fs.appendFileSync(LOG, `[${new Date().toISOString()}] FAILED ${e.stack}\n\n`); process.exit(1); });
+})().catch(e => {
+  console.error(e);
+  try {
+    fs.appendFileSync(LOG, `[${new Date().toISOString()}] FAILED ${e.stack}\n\n`);
+    writeScanStatus({ ok: false, error: e.message || String(e) });
+  } catch (err) { console.error(err); }
+  process.exit(1);
+});
 
 function boardURL(b) {
   return {

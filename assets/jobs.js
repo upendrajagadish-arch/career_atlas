@@ -27,15 +27,30 @@ const isNewJob = j => J.data && !J.data.firstRun && j.first === J.data.date;
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const coOf = id => id && S.data ? S.data.companies.find(c => c.id === id) : null;
 
+const TRIGGER_LABEL = { schedule: 'daily automatic scan', workflow_dispatch: 'manual scan', local: 'scan on a computer' };
+function scanStamp(d) {
+  const iso = d?.lastScanned || d?.generatedAt;
+  return iso ? new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+}
+function latestScanFailed() {
+  const s = J.status;
+  if (!s || s.ok !== false || !s.lastScanned) return false;
+  const feed = Date.parse(J.data?.lastScanned || J.data?.generatedAt || 0);
+  return Date.parse(s.lastScanned) >= feed;
+}
 function loadJobs() {
-  return fetch(JOBS_URL, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).catch(() => null).then(d => {
+  const get = url => fetch(url, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  return Promise.all([get(JOBS_URL), get('data/scan-status.json')]).then(([d, status]) => {
+    J.status = status && typeof status === 'object' ? status : null;
     if (!d || !Array.isArray(d.jobs)) return;
     J.data = d;
     for (const j of d.jobs) { J.byKey.set(j.key, j); pushTo(J.byCo, j.cid, j); pushTo(J.byTrack, j.track, j); j.roles.forEach(r => pushTo(J.byRole, r, j)); }
     for (const e of d.events) e.cids.forEach(id => pushTo(J.evByCo, id, e));
-    for (const [id, cov] of Object.entries(d.coverage)) if (cov.sharedWith && J.byCo.has(cov.sharedWith)) J.byCo.set(id, J.byCo.get(cov.sharedWith));
+    for (const [id, cov] of Object.entries(d.coverage || {})) if (cov.sharedWith && J.byCo.has(cov.sharedWith)) J.byCo.set(id, J.byCo.get(cov.sharedWith));
     const b = $('#jobsBadge'), n = d.firstRun ? d.totals.jobs : d.totals.newToday;
     if (n) { b.textContent = n > 999 ? '999+' : n; b.hidden = false; b.title = d.firstRun ? `${n} openings` : `${n} new today`; }
+    const btn = $('#btnJobs');
+    if (btn) btn.title = `Fresher openings, drives and events — last scanned ${scanStamp(d)}`;
   });
 }
 
@@ -126,9 +141,12 @@ function miniEvents(list, n = 8) {
   return `<ul class="lj-list">${list.slice(0, n).map(e => `<li><a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.title)}</a><small>${esc(e.type)} · ${esc(e.source || 'News')} · ${dayLabel(e.date)}</small></li>`).join('')}</ul>`;
 }
 function staleNote() {
-  if (!J.data) return note('No live job feed yet. Run <code>node scripts/update-jobs.js</code> in the project folder (it also runs automatically every day once the scheduled task is set up).', true);
+  if (!J.data) return note('No live job feed yet. The daily scan has not published <code>data/jobs.json</code>.', true);
   const d = dayDiff(new Date().toISOString().slice(0, 10)) * -1;
-  return d > 1 ? note(`The job feed was last refreshed ${plural(d, 'day')} ago. Check that the daily task is running, or run <code>node scripts/update-jobs.js</code>.`, true) : '';
+  const bits = [];
+  if (d > 1) bits.push(`The job feed was last refreshed ${plural(d, 'day')} ago. The daily scan should publish a new feed every morning — check the GitHub Action “Daily job scan”.`);
+  if (latestScanFailed()) bits.push(`The latest scan (${scanStamp(J.status)}) did not finish${J.status.error ? `: ${J.status.error}` : ''}. Openings below are from the last successful scan.`);
+  return bits.length ? note(bits.join(' '), true) : '';
 }
 function liveBody(n) {
   const d = n.data;
@@ -192,7 +210,7 @@ function roleLiveHTML(rm) {
 function liveRootHTML() {
   if (!J.data) return staleNote();
   const t = J.data.totals;
-  return `<div class="b-promo"><b>Today's fresher job feed</b><span>${t.jobs} openings at ${t.companiesWithJobs} companies${J.data.firstRun ? '' : ` · ${t.newToday} new today`} · ${t.events} drives, internships &amp; hackathons. Updated ${dayLabel(J.data.date)}.</span>${openFeedBtn('Open jobs &amp; events', {}, true)}</div>` + staleNote();
+  return `<div class="b-promo"><b>Today's fresher job feed</b><span>${t.jobs} openings at ${t.companiesWithJobs} companies${J.data.firstRun ? '' : ` · ${t.newToday} new today`} · ${t.events} drives, internships &amp; hackathons. Last scanned ${esc(scanStamp(J.data))}.</span>${openFeedBtn('Open jobs &amp; events', {}, true)}</div>` + staleNote();
 }
 
 /* ------------------------------------------------------------------ job-feed popup */
@@ -270,14 +288,17 @@ function sourcesTab() {
   const d = J.data, t = d.totals, cov = Object.entries(d.coverage).filter(([, v]) => v.boards?.length);
   const bySrc = new Map(); cov.forEach(([, v]) => uniq(v.boards.map(b => b.label)).forEach(l => bySrc.set(l, (bySrc.get(l) || 0) + 1)));
   const untracked = S.data.companies.filter(c => !d.coverage[c.id]?.boards?.length);
-  return facts([['Last update', `${new Date(d.generatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })} (${agoTxt(d.date)})`], ['Run time', `${d.durationSec} s · ${t.requests} requests`],
+  const how = d.trigger ? TRIGGER_LABEL[d.trigger] || d.trigger : 'scan';
+  return facts([['Last scanned', `${scanStamp(d)} (${agoTxt(d.date)}) · ${how}`], ['Run time', `${d.durationSec} s · ${t.requests} requests`],
       ['Companies tracked daily', `${t.trackedCompanies} of ${S.data.companies.length}`], ['Companies with openings today', `${t.companiesWithJobs}`], ['Fresher / intern openings', `${t.jobs}${d.firstRun ? '' : ` (${t.newToday} new today)`}`],
-      ['Drives, internships & hackathons', `${t.events} (last 30 days)`], ['Job aggregators', d.sources.aggregators.length ? esc(d.sources.aggregators.join(', ')) : 'None — add free Adzuna / Jooble API keys to include them']])
-    + `<h3>How it stays up to date</h3>${ul(['scripts/update-jobs.js runs every morning (Windows Task Scheduler, 08:00) and rewrites data/jobs.json. Reload the page to see the new feed.',
-      'Openings come straight from each company’s official job board (Workday, Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, amazon.jobs, Microsoft and Oracle careers APIs).',
+      ['Drives, internships & hackathons', `${t.events} (last 30 days)`], ['Job aggregators', d.sources.aggregators.length ? esc(d.sources.aggregators.join(', ')) : 'None — add free Adzuna / Jooble API keys as GitHub Actions secrets to include them']])
+    + (latestScanFailed() ? note(`Latest scan failed at ${scanStamp(J.status)}. ${esc(J.status.error || 'The previous feed was kept.')}`, true) : '')
+    + `<h3>How it stays up to date</h3>${ul(['The GitHub Action “Daily job scan” runs scripts/update-jobs.js every morning at 08:00 India time (02:30 UTC), writes data/jobs.json and data/scan-status.json, and pushes them. Vercel redeploys the site from that push. Reload the page to see the new feed.',
+      'To run it by hand, open the repository on GitHub → Actions → Daily job scan → Run workflow. Only people who can push to the repository can start it. The run log and the “Last scanned” time above show whether it finished.',
+      'Openings come straight from each company’s official job board (Workday, Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, amazon.jobs, Microsoft and Oracle careers APIs). The same company, title and city — or the same apply link — is kept once.',
       'Only India-based internships and fresher roles open to 0 years of experience are kept: titles such as Intern, Graduate, Trainee, Associate or Engineer I, and the full job description is read so any opening asking for 1 year or more (or months of experience) is dropped.',
       'The events tab lists only fresher job drives, internships and hackathons you can apply or register for, found in Google News headlines. Layoffs, results, statistics, winners, opinion pieces and anything asking for experience are left out.',
-      'Run it by hand any time: open a terminal in the project folder and run node scripts/update-jobs.js'])}`
+      'scripts/schedule-daily.ps1 can still refresh a copy on a Windows PC. That local run does not update this website.'])}`
     + `<h3>Sources in use</h3><div class="chips">${[...bySrc].sort((a, b) => b[1] - a[1]).map(([l, n]) => `<span class="tag">${esc(l)} · ${n}</span>`).join('')}<span class="tag">Google News · events</span></div>`
     + `<h3>Companies tracked daily <span class="muted">${cov.length}</span></h3><div class="cov">${cov.sort((a, b) => b[1].jobs - a[1].jobs).map(([id, v]) => {
       const c = coOf(id); return `<div class="cov-r"><button class="link-btn" data-j="co:${esc(id)}">${esc(c?.name || id)}</button><span>${v.jobs ? `<b>${v.jobs}</b> open` : '<span class="muted">0 open</span>'}</span>${v.boards[0]?.url ? `<a href="${esc(v.boards[0].url)}" target="_blank" rel="noopener">${esc(v.boards[0].label)} ↗</a>` : `<small>${esc(v.boards[0]?.label || '')}</small>`}</div>`;
@@ -295,7 +316,7 @@ function renderJobs(keepScroll) {
   const d = J.data, t = d.totals;
   const tabs = [['jobs', `Openings (${t.jobs})`], ['events', `Drives, internships & hackathons (${t.events})`], ['search', 'Search all job sites'], ['sources', 'Sources & daily update']];
   jobsCard.innerHTML = `<header class="m-head"><div class="m-headl"><span class="pill k-job">Live job feed · ${esc(dayLabel(d.date))}</span><h2 id="jTitle">Fresher &amp; graduate openings in India</h2>
-      <p>${t.jobs} openings at ${t.companiesWithJobs} companies${d.firstRun ? '' : ` · <b>${t.newToday} new today</b>`} · ${t.events} drives, internships &amp; hackathons · updated ${esc(agoTxt(d.date))}</p></div>
+      <p>${t.jobs} openings at ${t.companiesWithJobs} companies${d.firstRun ? '' : ` · <b>${t.newToday} new today</b>`} · ${t.events} drives, internships &amp; hackathons · last scanned ${esc(scanStamp(d))}</p></div>
       <div class="m-actions"><button class="chip-btn primary" data-j="xlsx"><svg class="ico" viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download Excel</button><button class="m-close" data-j="close" aria-label="Close">✕</button></div></header>
     <nav class="m-tabs">${tabs.map(([k, l]) => `<button class="m-tab${J.tab === k ? ' on' : ''}" data-j="tab:${k}">${esc(l)}</button>`).join('')}</nav>
     <div class="m-body">${staleNote()}${{ jobs: jobsTab, events: eventsTab, search: searchTab, sources: sourcesTab }[J.tab]()}</div>`;

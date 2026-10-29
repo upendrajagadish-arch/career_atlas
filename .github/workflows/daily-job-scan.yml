@@ -1,0 +1,92 @@
+# Refreshes data/jobs.json and pushes it so the Vercel site redeploys.
+# Schedule runs only from the default branch. Manual runs: Actions → Daily job scan → Run workflow.
+name: Daily job scan
+
+on:
+  schedule:
+    # 02:30 UTC = 08:00 Asia/Kolkata.
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+    inputs:
+      discover:
+        description: 'Re-discover job boards for every company (slower; normally weekly)'
+        type: boolean
+        default: false
+      events:
+        description: 'Collect Google News drives, internships and hackathons'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: career-atlas-job-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Scan company job boards
+        id: scan
+        env:
+          SCAN_TRIGGER: ${{ github.event_name }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          JOOBLE_KEY: ${{ secrets.JOOBLE_KEY }}
+        run: |
+          set -euo pipefail
+          args=()
+          if [ "${{ inputs.discover }}" = "true" ]; then args+=(--discover); fi
+          if [ "${{ inputs.events }}" = "false" ]; then args+=(--no-events); fi
+          node scripts/update-jobs.js "${args[@]}"
+
+      - name: Publish the feed
+        if: always() && steps.scan.outcome != 'skipped'
+        run: |
+          set -euo pipefail
+          files=()
+          for f in data/jobs.json data/ats-map.json data/scan-status.json; do
+            if [ -f "$f" ]; then files+=("$f"); fi
+          done
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No feed files to publish."
+            exit 0
+          fi
+          git add -- "${files[@]}"
+          if git diff --cached --quiet; then
+            echo "No feed changes to publish."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "${{ steps.scan.outcome }}" = "success" ]; then
+            msg="chore: daily job scan $(date -u +%F)"
+          else
+            msg="chore: record failed job scan $(date -u +%F)"
+          fi
+          git commit -m "$msg"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Upload scan log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-scan-log
+          path: data/update.log
+          retention-days: 14
+          if-no-files-found: ignore

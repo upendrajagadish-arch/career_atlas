@@ -4,6 +4,7 @@ scripts/config.json
 # Updater logs and debug output
 data/update.log
 data/*-run.txt
+data/*.tmp
 
 node_modules/
 .DS_Store
