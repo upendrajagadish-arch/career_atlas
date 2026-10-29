@@ -6,6 +6,7 @@
 <title>Career Atlas · Interactive Mind Map</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%235b74f6'/%3E%3Ccircle cx='7' cy='12' r='2.5' fill='white'/%3E%3Ccircle cx='17' cy='7' r='2' fill='white'/%3E%3Ccircle cx='17' cy='17' r='2' fill='white'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/atlas.css">
+<link rel="stylesheet" href="assets/explainer.css">
 </head>
 <body>
 <div id="app">
@@ -70,6 +71,7 @@
   <aside class="panel" id="panel" aria-live="polite"></aside>
 </div>
 <div class="modal" id="planModal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mTitle"></div></div>
+<div class="modal ex-modal" id="explainModal" hidden><div class="ex-card" role="dialog" aria-modal="true" aria-labelledby="exTitle"></div></div>
 <div class="modal" id="builderModal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bTitleH"></div></div>
 <div class="modal" id="jobsModal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="jTitle"></div></div>
 <div class="modal" id="resumeModal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="rsTitle"></div><input type="file" id="rsFile" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" multiple hidden></div>
@@ -81,6 +83,7 @@
 <script src="assets/curriculum/roles-data-product.js"></script>
 <script src="assets/curriculum/roles-platforms.js"></script>
 <script src="assets/atlas.js"></script>
+<script src="assets/explainer.js"></script>
 <script src="assets/builder.js"></script>
 <script src="assets/jobs.js"></script>
 <script src="assets/resume-lexicon.js"></script>

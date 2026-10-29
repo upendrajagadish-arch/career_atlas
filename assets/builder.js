@@ -54,7 +54,7 @@ function lecturesFor(it) {
   planOf(rm).days.forEach((day, k) => {
     const w = Math.floor(k / 5) + 1;
     if (!it.levels[w - 1]) return;
-    day.hours.forEach(title => pool.push({ title, theme: day.theme, level: LEVELS[w - 1][0], item: it }));
+    day.hours.forEach((title, hi) => pool.push({ title, theme: day.theme, level: LEVELS[w - 1][0], item: it, w, d: (k % 5) + 1, i: hi + 1 }));
   });
   const n = Math.min(it.hours, pool.length);
   if (B.coverage === 'first') return pool.slice(0, n);
@@ -166,7 +166,7 @@ function bTimetable(sch, print) {
       g += `<div class="g-t">${slot}<small>Lecture ${hi + 1}</small></div>` + days.map(d => {
         const l = d.lectures[hi];
         if (!l) return d.logged != null && hi >= d.cap ? movedCell(d) : '<div class="g-c b-empty"></div>';
-        return `<div class="g-c b-cell${l.carriedDate ? ' carried' : ''}" style="--c:${colorOf(l.item)}"><span class="g-no">Hour ${l.n} · <span class="b-tagname">${esc(rmOf(l.item).name)}</span>${builderCarry(l)}</span><span class="b-title">${esc(l.title)}</span><small class="b-lvl">${l.level} · ${esc(l.theme)}</small></div>`;
+        return `<div class="g-c b-cell${l.carriedDate ? ' carried' : ''}" style="--c:${colorOf(l.item)}"><span class="g-no">Hour ${l.n} · <span class="b-tagname">${esc(rmOf(l.item).name)}</span>${builderCarry(l)}</span><button type="button" class="g-watch" data-explain="${esc(rmOf(l.item).slug)}|${l.w}|${l.d}|${l.i}">Watch explainer</button><span class="b-title">${esc(l.title)}</span><small class="b-lvl">${l.level} · ${esc(l.theme)}</small></div>`;
       }).join('');
     });
     return `<section class="m-week"><div class="m-week-h"><div><h3>Week ${wi + 1} <small>${fmtDate(days[0].date)} – ${fmtDate(days.at(-1).date)}</small></h3><p>Lecture hours ${weekRange(days)} · ${days.length} teaching days</p></div></div>
@@ -199,7 +199,7 @@ function bSyllabus(sch) {
   return B.items.filter(it => it.hours).map(it => {
     const ls = sch.lectures.filter(l => l.item === it);
     return `<section class="b-syl" style="--c:${colorOf(it)}"><div class="b-syl-h"><i class="b-dot"></i><h3>${esc(nameOf(it))}</h3><small>${ls.length} lecture hours · ${levelNames(it).join(', ')} · ${fmtDate(ls[0].date)} → ${fmtDate(ls.at(-1).date)}</small></div>
-      <ol class="b-syl-list">${ls.map(l => `<li><span class="b-when">${fmtDate(l.date)} · ${SLOTS[l.slot]}</span><b>${esc(l.title)}</b><small>Hour ${l.n} of ${sch.lectures.length} · ${l.level} · ${esc(l.theme)}${l.carriedDate ? ` · ↻ carried forward from ${fmtDate(l.carriedDate)}` : ''}</small></li>`).join('')}</ol></section>`;
+      <ol class="b-syl-list">${ls.map(l => `<li><span class="b-when">${fmtDate(l.date)} · ${SLOTS[l.slot]}</span><button type="button" class="watch-btn" data-explain="${esc(rmOf(l.item).slug)}|${l.w}|${l.d}|${l.i}"><span class="play" aria-hidden="true">▶</span><span>${esc(l.title)}</span></button><small>Hour ${l.n} of ${sch.lectures.length} · ${l.level} · ${esc(l.theme)}${l.carriedDate ? ` · ↻ carried forward from ${fmtDate(l.carriedDate)}` : ''}</small></li>`).join('')}</ol></section>`;
   }).join('');
 }
 

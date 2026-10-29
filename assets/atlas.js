@@ -846,6 +846,7 @@ nodesLayer.addEventListener('click', e => {
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'learn') { select(n); toggleLearned(n); return; }
   onNodeClick(n, act === 'toggle');
+  if (n.kind === 'hour') openExplainer(n);
 });
 
 /* pan / zoom / pinch */
@@ -913,6 +914,7 @@ $('#btnPanel').onclick = () => {
 };
 
 document.addEventListener('keydown', e => {
+  if (S.explainer && typeof explainerKey === 'function' && explainerKey(e)) return;
   if (S.resume) { if (e.key === 'Escape' && !e.target.matches('input,select,textarea')) closeResume(); return; }
   if (S.builder) { if (e.key === 'Escape' && !e.target.matches('input,select')) closeBuilder(); return; }
   if (S.jobs) { if (e.key === 'Escape' && !e.target.matches('input,select')) closeJobs(); return; }
@@ -926,7 +928,9 @@ document.addEventListener('keydown', e => {
     case 'ArrowLeft': if (n.expanded) { setExpanded(n, false); update(); reveal([n], n); return; } t = n.parent; break;
     case 'ArrowDown': t = siblingOf(n, 1); break;
     case 'ArrowUp': t = siblingOf(n, -1); break;
-    case 'Enter': case ' ': onNodeClick(n, true); e.preventDefault(); return;
+    case 'Enter': case ' ':
+      if (n.kind === 'hour') { openExplainer(n); e.preventDefault(); return; }
+      onNodeClick(n, true); e.preventDefault(); return;
     case 'f': case 'F': fit(); return;
     case 'c': case 'C': centerOn(n); return;
     case '+': case '=': zoomBy(1.25); return;
@@ -990,6 +994,7 @@ function pick(i) {
   const h = hits[i]; if (!h) return;
   resultsEl.classList.remove('open'); searchEl.blur();
   revealKeys(h.keys, ['roadmap', 'skill', 'day'].includes(h.type));
+  if (h.type === 'hour' && S.sel?.kind === 'hour') openExplainer(S.sel);
 }
 searchEl.addEventListener('input', runSearch);
 searchEl.addEventListener('focus', () => searchEl.value && runSearch());
@@ -1051,7 +1056,7 @@ function syllabus(rm, openWeek) {
     const w = wi + 1, wp = progressOf({ kind: 'week', data: { rm, w } });
     return `<details${w === openWeek ? ' open' : ''}><summary>Week ${w} · ${LEVELS[wi][0]} — ${LEVELS[wi][1]}<small>${wp.done}/20 h</small></summary>${days.map((day, di) =>
       `<div class="day"><b>${WEEKDAYS[di]} · Day ${dayNo(w, di + 1)} — ${esc(day.theme)}</b><ol start="${hourNo(w, di + 1, 1)}">${day.hours.map((h, hi) =>
-        `<li class="${S.learned.has(lectureKey(rm, w, di + 1, hi + 1)) ? 'done' : ''}">${esc(h)}</li>`).join('')}</ol></div>`).join('')}</details>`;
+        `<li class="${S.learned.has(lectureKey(rm, w, di + 1, hi + 1)) ? 'done' : ''}"><button class="watch-btn" data-explain="${esc(rm.slug)}|${w}|${di + 1}|${hi + 1}"><span class="play" aria-hidden="true">▶</span><span>${esc(h)}</span></button></li>`).join('')}</ol></div>`).join('')}</details>`;
   }).join('')}</div>`;
 }
 function lectureParts(t) {
@@ -1325,13 +1330,13 @@ function body(n) {
       const { w } = d, p = progressOf(n), [lvl, focus] = LEVELS[w - 1];
       return `<p><b>Week ${w} — ${lvl} level (${focus}).</b> ${WEEK_DESC[w - 1]}</p>${progressBar(p)}`
         + facts([['Teaching days', `Day ${dayNo(w, 1)} – ${dayNo(w, 5)} of 20`], ['Lecture hours', `Hour ${hourNo(w, 1, 1)} – ${hourNo(w, 5, 4)} of 80`], ['Schedule', 'Mon – Fri · 4 lectures a day']])
-        + kids(n).map(dn => `<h4>${goBtn(dn, null, true)}<small>${progressOf(dn).done}/4</small></h4><ul class="topic-list">${kids(dn).map(hn => `<li class="${isLearned(hn) ? 'done' : ''}">${esc(hn.title)}</li>`).join('')}</ul>`).join('');
+        + kids(n).map(dn => `<h4>${goBtn(dn, null, true)}<small>${progressOf(dn).done}/4</small></h4><ul class="topic-list">${kids(dn).map(hn => `<li class="${isLearned(hn) ? 'done' : ''}"><button class="watch-btn" data-go="${esc(hn.id)}"><span class="play" aria-hidden="true">▶</span><span>${esc(hn.title)}</span></button></li>`).join('')}</ul>`).join('');
     }
     case 'day': {
       const { rm, w } = d, day = d.d, theme = planOf(rm).weeks[w - 1][day - 1].theme, p = progressOf(n);
       const prev = neighbour(n, -1, 1), next = neighbour(n, 1, 1);
       return `<p>${WEEKDAYS[day - 1]} of week ${w} (${LEVELS[w - 1][0]}) — teaching day <b>${dayNo(w, day)} of 20</b> in the ${esc(rm.name)} plan. Today's theme is <b>${esc(theme)}</b>.</p>${progressBar(p)}`
-        + `<h3>Today's timetable</h3><div class="slots">${kids(n).map((hn, hi) => `${hi === 2 ? '<div class="brk">Break · 11:00 – 11:15</div>' : ''}<div class="t">${SLOTS[hi]}</div><div>${goBtn(hn)}</div><div class="ok">${isLearned(hn) ? '✓' : ''}</div>`).join('')}</div>`
+        + `<h3>Today's timetable</h3><div class="slots">${kids(n).map((hn, hi) => `${hi === 2 ? '<div class="brk">Break · 11:00 – 11:15</div>' : ''}<div class="t">${SLOTS[hi]}</div><div class="slot-main">${goBtn(hn)}<button class="watch-btn" data-go="${esc(hn.id)}"><span class="play" aria-hidden="true">▶</span><span>Watch explainer</span></button></div><div class="ok">${isLearned(hn) ? '✓' : ''}</div>`).join('')}</div>`
         + note('Four one-hour lectures with a 15-minute break. No practice, lab or assignment time is scheduled.')
         + `<div class="nav-row">${prev ? `<button class="chip-btn" data-go="${esc(prev.id)}" data-open="1"><small>← Previous day</small>${esc(short(prev.title, 34))}</button>` : ''}${next ? `<button class="chip-btn" data-go="${esc(next.id)}" data-open="1"><small>Next day →</small>${esc(short(next.title, 34))}</button>` : ''}</div>`;
     }
@@ -1341,8 +1346,9 @@ function body(n) {
       const core = parts ? parts.map(x => `${x} — definition, how it works and where it is used`)
         : ['Definitions and key vocabulary', 'How it works, step by step, with diagrams', `Where it shows up in real ${rm.name} work`, 'Common misconceptions and pitfalls'];
       const q = `“${t}”`;
-      return `<p>Lecture <b>${hourNo(w, day, i)} of 80</b> · ${WEEKDAYS[day - 1]}, week ${w} (${LEVELS[w - 1][0]}) · ${SLOTS[i - 1]}. Part of the day on <i>${esc(theme)}</i> in the ${esc(rm.name)} plan.</p>
-        <button class="chip-btn ${L ? 'ok' : 'primary'}" data-act="learn">${L ? '✓ Learned — click to undo' : 'Mark as learned'}</button>
+      return `<p>Lecture <b>${hourNo(w, day, i)} of 80</b> · ${WEEKDAYS[day - 1]}, week ${w} (${LEVELS[w - 1][0]}) · ${SLOTS[i - 1]}. Part of the day on <i>${esc(theme)}</i> in the ${esc(rm.name)} plan. The explainer walks every part of this topic, including the small details, one scene at a time.</p>
+        <button class="chip-btn primary watch-main" data-act="explain">▶ Watch explainer</button>
+        <button class="chip-btn ${L ? 'ok' : ''}" data-act="learn">${L ? '✓ Learned — click to undo' : 'Mark as learned'}</button>
         <h3>60-minute lecture outline</h3><ul class="outline">
           <li><span class="mins">0–10 min</span><div><b>Introduction</b>${ul([prev ? `Recap of “${prev.title}”` : 'Course goals and how the 80 hours are organised', `Why ${q} matters for ${rm.name}`])}</div></li>
           <li><span class="mins">10–35 min</span><div><b>Core concepts</b>${ul(core)}</div></li>
@@ -1353,7 +1359,7 @@ function body(n) {
         ${facts([['Builds on', prev ? goBtn(prev) : 'Start of the course'], ['Leads to', next ? goBtn(next) : 'End of the 80-hour plan 🎓']])}
         <h3>Key questions</h3>${ul([`What problem does ${q} address, and what would break without it?`, 'What mistakes do beginners commonly make here?', `How would you explain ${q} in a 60-second interview answer?`])}
         ${note('Lecture-only hour. The schedule has no practice, lab or assignment blocks.')}
-        ${links([['Read tutorials', search(`${t} ${rm.name} tutorial`), true], ['Watch lectures', yt(`${t} ${rm.name}`)]])}
+        ${links([['Read tutorials', search(`${t} ${rm.name} tutorial`)], ['More on YouTube', yt(`${t} ${rm.name} tutorial lecture`)]])}
         <div class="nav-row">${prev ? `<button class="chip-btn" data-go="${esc(prev.id)}"><small>← Previous lecture</small>${esc(short(prev.title, 34))}</button>` : ''}${next ? `<button class="chip-btn" data-go="${esc(next.id)}"><small>Next lecture →</small>${esc(short(next.title, 34))}</button>` : ''}</div>`;
     }
     case 'stage': {
@@ -1427,7 +1433,7 @@ function renderPanel() {
   const hk = hasKids(n);
   const crumbs = lineage(n).slice(0, -1).map(a => `<button class="crumb" data-go="${esc(a.id)}">${esc(short(a.title, 26))}</button>`).join('<span class="sep">›</span>');
   let html = `<div class="p-head"><span class="pill k-${n.kind}">${KIND_LABEL[n.kind]}</span>${crumbs ? `<div class="crumbs">${crumbs}</div>` : ''}<h2>${esc(n.title)}</h2>${n.sub ? `<p class="p-sub">${esc(n.sub)}</p>` : ''}
-    <div class="p-actions">${hk ? `<button class="chip-btn primary" data-act="toggle">${n.expanded ? 'Collapse branch' : 'Expand branch'}</button><button class="chip-btn" data-act="expand2">Expand 2 levels</button>` : ''}${['week', 'day', 'hour'].includes(n.kind) ? '<button class="chip-btn" data-act="plan">⤢ Full timetable</button>' : ''}<button class="chip-btn" data-act="center">Center on map</button></div></div>
+    <div class="p-actions">${n.kind === 'hour' ? '<button class="chip-btn primary watch-main" data-act="explain">▶ Watch explainer</button>' : ''}${hk ? `<button class="chip-btn ${n.kind === 'hour' ? '' : 'primary'}" data-act="toggle">${n.expanded ? 'Collapse branch' : 'Expand branch'}</button><button class="chip-btn" data-act="expand2">Expand 2 levels</button>` : ''}${['week', 'day', 'hour'].includes(n.kind) ? '<button class="chip-btn" data-act="plan">⤢ Full timetable</button>' : ''}<button class="chip-btn" data-act="center">Center on map</button></div></div>
     <div class="p-body">${body(n)}</div>`;
   if (hk) {
     const ks = kids(n);
@@ -1438,7 +1444,12 @@ function renderPanel() {
 }
 panel.addEventListener('click', e => {
   const t = e.target.closest('[data-go],[data-act],[data-reveal]'); if (!t) return;
-  if (t.dataset.go) { go(t.dataset.go, !!t.dataset.open); return; }
+  if (t.dataset.go) {
+    go(t.dataset.go, !!t.dataset.open);
+    const dest = S.nodes.get(t.dataset.go);
+    if (dest?.kind === 'hour') openExplainer(dest);
+    return;
+  }
   if (t.dataset.reveal) { $('#hint').classList.add('gone'); revealKeys(JSON.parse(t.dataset.reveal), true); return; }
   const n = S.sel;
   switch (t.dataset.act) {
@@ -1446,6 +1457,7 @@ panel.addEventListener('click', e => {
     case 'expand2': expandLevels(n, 2); break;
     case 'center': centerOn(n); break;
     case 'learn': toggleLearned(n); break;
+    case 'explain': if (n?.kind === 'hour') openExplainer(n); break;
     case 'plan': openPlan(n.data.rm, n.data); break;
     case 'xlsx': downloadXLSX(n.data.rm); break;
     case 'build': openBuilder(kindOf(n.data.rm) === 'roadmap' ? { role: n.data.rm.slug } : { skill: n.data.rm.slug }); break;
@@ -1496,7 +1508,8 @@ function modalTimetable({ rm, focus }) {
         const ref = `${l.w}|${l.d}|${l.i}`, ok = S.learned.has(lectureKey(rm, l.w, l.d, l.i));
         const foc = focus.w === l.w && focus.d === l.d && (!focus.i || focus.i === l.i);
         return `<div class="g-c${ok ? ' done' : ''}${foc ? ' focus' : ''}${l.carriedFrom != null ? ' carried' : ''}"><span class="g-no">Hour ${l.n}${carryTag(l)}</span>`
-          + `<button class="g-title" data-mgo="${ref}" title="Show this lecture on the map">${esc(l.title)}</button>`
+          + `<button class="g-title" data-mgo="${ref}" title="Play the explainer for this lecture">${esc(l.title)}</button>`
+          + `<button class="g-watch" data-explain="${esc(rm.slug)}|${l.w}|${l.d}|${l.i}">Watch explainer</button>`
           + `<button class="g-chk" data-mlearn="${ref}" title="${ok ? 'Learned — click to undo' : 'Mark as learned'}">${ok ? '✓' : ''}</button></div>`;
       }).join('');
     });
@@ -1515,7 +1528,7 @@ function modalSyllabus({ rm }) {
       + `<div class="m-days">${days.map(d => `<article class="m-day"><h4>${WEEKDAYS[d.k % 5]} · Day ${d.k + 1}${d.logged != null ? ` <em class="tl-tag${d.cap < DAY_HOURS ? ' short' : ''}">${d.cap}/${DAY_HOURS} h taught</em>` : ''}<span>${esc(dayThemes(d))}</span></h4>`
         + (d.lectures.length ? `<ol start="${d.lectures[0].n}">${d.lectures.map(l => {
           const parts = lectureParts(l.title), ok = S.learned.has(lectureKey(rm, l.w, l.d, l.i));
-          return `<li class="${ok ? 'done' : ''}"><b>${esc(l.title)}</b><small>${SLOTS[l.slot]}${ok ? ' · ✓ learned' : ''}${l.carriedFrom != null ? ` · ↻ carried forward from Day ${l.carriedFrom + 1}` : ''}</small>${parts ? ul(parts) : ''}</li>`;
+          return `<li class="${ok ? 'done' : ''}"><button class="watch-btn" data-explain="${esc(rm.slug)}|${l.w}|${l.d}|${l.i}"><span class="play" aria-hidden="true">▶</span><span>${esc(l.title)}</span></button><small>${SLOTS[l.slot]}${ok ? ' · ✓ learned' : ''}${l.carriedFrom != null ? ` · ↻ carried forward from Day ${l.carriedFrom + 1}` : ''}</small>${parts ? ul(parts) : ''}</li>`;
         }).join('')}</ol>` : '<p class="muted">No class held — the lectures moved to the next day.</p>') + '</article>').join('')}</div></section>`;
   }).join('');
 }
@@ -1565,9 +1578,8 @@ modal.addEventListener('click', e => {
     S.learned.has(k) ? S.learned.delete(k) : S.learned.add(k);
     saveLearned(); update(); renderModal(true);
   } else if (ds.mgo) {
-    const [w, d, i] = ds.mgo.split('|'), a = roadmapAnchor(M.rm);
-    closePlan(); $('#hint').classList.add('gone');
-    revealKeys([...a.keys, 'w:' + w, 'd:' + d, 'h:' + i], false, a.from);
+    const [w, d, i] = ds.mgo.split('|').map(Number);
+    openExplainerFor(M.rm, w, d, i);
   } else if (ds.reveal) { closePlan(); revealKeys(JSON.parse(ds.reveal), true); }
 });
 modal.addEventListener('change', e => {
