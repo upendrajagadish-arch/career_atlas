@@ -4,8 +4,10 @@ name: Daily job scan
 
 on:
   schedule:
-    # 02:30 UTC = 08:00 Asia/Kolkata.
+    # 02:30 UTC = 08:00 Asia/Kolkata. GitHub often starts this hours late,
+    # so a second run at 10:00 UTC (15:30 IST) still publishes the day's feed.
     - cron: '30 2 * * *'
+    - cron: '0 10 * * *'
   workflow_dispatch:
     inputs:
       discover:
@@ -58,6 +60,7 @@ jobs:
         if: always() && steps.scan.outcome != 'skipped'
         run: |
           set -euo pipefail
+          branch="${GITHUB_REF_NAME:-main}"
           files=()
           for f in data/jobs.json data/ats-map.json data/scan-status.json; do
             if [ -f "$f" ]; then files+=("$f"); fi
@@ -66,21 +69,35 @@ jobs:
             echo "No feed files to publish."
             exit 0
           fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- "${files[@]}"
           if git diff --cached --quiet; then
             echo "No feed changes to publish."
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ "${{ steps.scan.outcome }}" = "success" ]; then
             msg="chore: daily job scan $(date -u +%F)"
           else
             msg="chore: record failed job scan $(date -u +%F)"
           fi
           git commit -m "$msg"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git fetch origin "$branch"
+          if ! git rebase -X theirs "origin/$branch"; then
+            echo "Rebase conflict — keeping this scan's feed files."
+            git checkout --theirs -- data/jobs.json data/ats-map.json data/scan-status.json || true
+            git add -- data/jobs.json data/ats-map.json data/scan-status.json
+            GIT_EDITOR=true git rebase --continue
+          fi
+          for i in 1 2 3; do
+            git push origin "HEAD:$branch" && exit 0
+            echo "Push attempt $i failed; fetching and rebasing."
+            git fetch origin "$branch"
+            git rebase -X theirs "origin/$branch" || true
+            sleep $((i * 5))
+          done
+          echo "Could not publish the feed after 3 pushes."
+          exit 1
 
       - name: Upload scan log
         if: always()

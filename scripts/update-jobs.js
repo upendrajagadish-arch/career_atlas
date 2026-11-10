@@ -265,7 +265,7 @@ const ATS = {
     return (d.jobs || []).map(j => ({ id: j.id, title: j.title, loc: [j.location?.name, ...(j.offices || []).map(o => o.name)].join(' | '), url: j.absolute_url, posted: j.first_published || j.updated_at, desc: j.content }));
   },
   async lever(b) {
-    const d = await http(`https://api.lever.co/v0/postings/${b.slug}?mode=json`);
+    const d = await http(`https://api.lever.co/v0/postings/${b.slug}?mode=json`, { timeout: 45000 });
     return (Array.isArray(d) ? d : []).map(j => ({ id: j.id, title: j.text, loc: [j.categories?.location, ...(j.categories?.allLocations || []), j.country].join(' | '), url: j.hostedUrl, posted: j.createdAt,
       desc: [j.descriptionPlain, ...(j.lists || []).map(l => l.text + ' ' + l.content), j.additionalPlain].join(' '), commitment: j.categories?.commitment }));
   },
@@ -526,7 +526,13 @@ else (async () => {
       try {
         if (!boardCache.has(bkey)) boardCache.set(bkey, ATS[b.ats](b));
         raw = await boardCache.get(bkey);
-      } catch (e) { errors.push(`${c.name} (${ATS_LABEL[b.ats]}): ${e.message}`); continue; }
+      } catch (e) {
+        errors.push(`${c.name} (${ATS_LABEL[b.ats]}): ${e.message}`);
+        if (e.status === 404 && Array.isArray(atsMap.boards[c.id])) {
+          atsMap.boards[c.id] = atsMap.boards[c.id].filter(x => x.ats !== b.ats || x.slug !== b.slug);
+        }
+        continue;
+      }
       if (claimed.has(bkey) && claimed.get(bkey) !== c.id) { cov.sharedWith = claimed.get(bkey); continue; }
       claimed.set(bkey, c.id);
       const india = raw.filter(j => indiaCity(j.loc));
@@ -644,6 +650,7 @@ else (async () => {
   const tmp = OUT + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(result));
   fs.renameSync(tmp, OUT);
+  fs.writeFileSync(ATS_MAP, JSON.stringify(atsMap, null, 1));
   log(`Done in ${result.durationSec}s · ${result.totals.jobs} openings (${result.totals.newToday} new) at ${result.totals.companiesWithJobs} companies · ${events.length} events · ${errors.length} errors`);
   writeScanStatus({
     ok: true, lastScanned: scannedAt, durationSec: result.durationSec, totals: result.totals,

@@ -73,7 +73,7 @@
     { "company": "DXC Technology", "ats": "workday", "host": "dxctechnology.wd1.myworkdayjobs.com", "site": "DXCJobs" },
     { "company": "PwC", "ats": "workday", "host": "pwc.wd3.myworkdayjobs.com", "site": "Global_Experienced_Careers" }
   ],
-  "blockedBoards": ["lever/linkedin"],
+  "blockedBoards": ["lever/linkedin", "recruitee/weekday"],
   "newsAliases": {
     "Visa": "\"Visa Inc\" OR \"Visa India\"",
     "Shell": "\"Shell India\" OR \"Shell plc\"",
