@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-03T10:01:03.787Z",
+ "generatedAt": "2026-11-03T05:09:51.516Z",
  "boards": {
   "adp": [],
   "adlift": [],
@@ -18,7 +18,7 @@
    {
     "ats": "greenhouse",
     "slug": "airbnb",
-    "india": 11,
+    "india": 10,
     "total": 212
    }
   ],
@@ -117,7 +117,7 @@
     "ats": "greenhouse",
     "slug": "databricks",
     "india": 84,
-    "total": 911
+    "total": 910
    }
   ],
   "dunzo": [],
@@ -359,8 +359,8 @@
    {
     "ats": "greenhouse",
     "slug": "observeai",
-    "india": 5,
-    "total": 9
+    "india": 6,
+    "total": 10
    }
   ],
   "nammayatri": [],
@@ -445,8 +445,8 @@
    {
     "ats": "ashby",
     "slug": "sarvam",
-    "india": 48,
-    "total": 48
+    "india": 46,
+    "total": 46
    }
   ],
   "signoz": [],
@@ -462,7 +462,7 @@
     "ats": "ashby",
     "slug": "snowflake",
     "india": 9,
-    "total": 367
+    "total": 368
    }
   ],
   "sidsfarm": [],
@@ -483,8 +483,8 @@
    {
     "ats": "smartrecruiters",
     "slug": "sutherland",
-    "india": 59,
-    "total": 60
+    "india": 55,
+    "total": 56
    }
   ],
   "socitgnraleglobalsolutioncentre": [],
@@ -493,8 +493,8 @@
    {
     "ats": "smartrecruiters",
     "slug": "swiggy",
-    "india": 117,
-    "total": 179
+    "india": 120,
+    "total": 180
    }
   ],
   "teamlease": [],
@@ -615,8 +615,8 @@
    {
     "ats": "greenhouse",
     "slug": "zenoti",
-    "india": 35,
-    "total": 58
+    "india": 34,
+    "total": 56
    }
   ],
   "zenwork": [],
@@ -637,8 +637,8 @@
    {
     "ats": "greenhouse",
     "slug": "wppmedia",
-    "india": 54,
-    "total": 823
+    "india": 52,
+    "total": 824
    }
   ],
   "zoho": [],
