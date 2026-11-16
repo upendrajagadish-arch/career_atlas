@@ -1,17 +1,17 @@
 {
   "ok": true,
-  "lastScanned": "2026-11-16T10:06:07.587Z",
+  "lastScanned": "2026-11-16T19:59:24.231Z",
   "trigger": "schedule",
   "date": "2026-11-16",
-  "durationSec": 141,
+  "durationSec": 287,
   "totals": {
-    "jobs": 37,
-    "newToday": 5,
+    "jobs": 40,
+    "newToday": 8,
     "companiesWithJobs": 13,
     "trackedCompanies": 101,
-    "events": 26,
-    "requests": 1108
+    "events": 29,
+    "requests": 1194
   },
   "errorCount": 65,
-  "previousJobs": 158
+  "previousJobs": 37
 }
