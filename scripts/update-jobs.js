@@ -116,7 +116,12 @@ async function http(url, { method = 'GET', body, headers = {}, type = 'json', ti
         method, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(timeout),
         headers: { 'user-agent': UA, accept: type === 'json' ? 'application/json' : '*/*', ...(body ? { 'content-type': 'application/json' } : {}), ...headers },
       });
-      if ((r.status === 429 || r.status >= 500) && attempt < retries) { await sleep(2000 * (attempt + 1)); continue; }
+      if ((r.status === 429 || r.status >= 500) && attempt < retries) {
+        const ra = Number(r.headers.get('retry-after'));
+        const wait = Number.isFinite(ra) && ra > 0 ? Math.min(ra * 1000, 60000) : Math.min(30000, 2500 * 2 ** attempt);
+        await sleep(wait);
+        continue;
+      }
       if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
       return type === 'json' ? await r.json() : await r.text();
     } catch (e) {
@@ -131,6 +136,13 @@ async function pool(items, size, fn) {
     while (next < items.length) { const i = next++; try { out[i] = await fn(items[i], i); } catch (e) { out[i] = { error: e }; } }
   }));
   return out;
+}
+// Workday rate-limits hard when many tenants are hit at once — fetch one board at a time.
+let workdayChain = Promise.resolve();
+function withWorkdayLock(fn) {
+  const run = workdayChain.then(fn, fn);
+  workdayChain = run.catch(() => {});
+  return run;
 }
 
 /* ------------------------------------------------------------------ India locations */
@@ -298,34 +310,46 @@ const ATS = {
     return (d.offers || []).map(j => ({ id: j.id, title: j.title, loc: [j.location, j.city, j.country].join(' | '), url: j.careers_url, posted: j.published_at, desc: j.description + ' ' + j.requirements }));
   },
   async workday(b) {
-    const tenant = b.host.split('.')[0], base = `https://${b.host}/wday/cxs/${tenant}/${b.site}`;
-    const first = await http(`${base}/jobs`, { method: 'POST', body: { appliedFacets: {}, limit: 1, offset: 0, searchText: '' } });
-    const facets = {};
-    (function walk(list, inCountry) {
-      for (const f of list || []) {
-        const isCountry = inCountry || /country/i.test(`${f.facetParameter} ${f.descriptor || ''}`);
-        for (const v of f.values || []) {
-          if (v.values) walk([{ ...v, facetParameter: v.facetParameter || f.facetParameter }], isCountry);
-          else if (isCountry && /^india$/i.test(v.descriptor || '')) (facets[f.facetParameter] ||= []).push(v.id);
+    return withWorkdayLock(async () => {
+      const tenant = b.host.split('.')[0], base = `https://${b.host}/wday/cxs/${tenant}/${b.site}`;
+      const wdHttp = (path, body) => http(`${base}${path}`, { method: 'POST', body, retries: 5, timeout: 35000 });
+      let first;
+      try {
+        first = await wdHttp('/jobs', { appliedFacets: {}, limit: 1, offset: 0, searchText: 'India' });
+      } catch {
+        first = await wdHttp('/jobs', { appliedFacets: {}, limit: 1, offset: 0, searchText: 'intern' });
+      }
+      await sleep(400);
+      const facets = {};
+      (function walk(list, inCountry) {
+        for (const f of list || []) {
+          const isCountry = inCountry || /country/i.test(`${f.facetParameter} ${f.descriptor || ''}`);
+          for (const v of f.values || []) {
+            if (v.values) walk([{ ...v, facetParameter: v.facetParameter || f.facetParameter }], isCountry);
+            else if (isCountry && /^india$/i.test(v.descriptor || '')) (facets[f.facetParameter] ||= []).push(v.id);
+          }
+        }
+      })(first.facets, false);
+      const hasFacet = Object.keys(facets).length > 0;
+      const seen = new Map();
+      const queries = ['intern', 'graduate', 'fresher', 'trainee', 'entry level', 'associate', 'junior', 'early career', 'university', 'campus', 'analyst'];
+      for (const q of queries) {
+        for (let offset = 0; offset < 60; offset += 20) {
+          const d = await wdHttp('/jobs', { appliedFacets: facets, limit: 20, offset, searchText: hasFacet ? q : `${q} India` });
+          for (const j of d.jobPostings || []) {
+            if (!j.externalPath || seen.has(j.externalPath)) continue;
+            const pathLoc = decodeURIComponent((j.externalPath.split('/')[2] || '').replace(/-+/g, ' '));
+            seen.set(j.externalPath, { id: j.bulletFields?.[0] || j.externalPath, title: j.title, loc: `${j.locationsText || ''} | ${pathLoc}${hasFacet ? ' | India' : ''}`,
+              url: `https://${b.host}/en-US/${b.site}${j.externalPath}`, posted: workdayPosted(j.postedOn),
+              detail: async () => { const x = await http(`${base}${j.externalPath}`, { retries: 3, timeout: 35000 }); return x.jobPostingInfo?.jobDescription || ''; } });
+          }
+          await sleep(350);
+          if (offset + 20 >= (d.total || 0)) break;
         }
       }
-    })(first.facets, false);
-    const hasFacet = Object.keys(facets).length > 0;
-    const seen = new Map();
-    for (const q of ['intern', 'graduate', 'fresher', 'trainee', 'entry level', 'associate', 'junior', 'early career', 'apprentice', 'university', 'campus', 'analyst', 'servicenow', 'salesforce', 'sap']) {
-      for (let offset = 0; offset < 100; offset += 20) {
-        const d = await http(`${base}/jobs`, { method: 'POST', body: { appliedFacets: facets, limit: 20, offset, searchText: hasFacet ? q : `${q} India` } });
-        for (const j of d.jobPostings || []) {
-          if (!j.externalPath || seen.has(j.externalPath)) continue;
-          const pathLoc = decodeURIComponent((j.externalPath.split('/')[2] || '').replace(/-+/g, ' '));
-          seen.set(j.externalPath, { id: j.bulletFields?.[0] || j.externalPath, title: j.title, loc: `${j.locationsText || ''} | ${pathLoc}${hasFacet ? ' | India' : ''}`,
-            url: `https://${b.host}/en-US/${b.site}${j.externalPath}`, posted: workdayPosted(j.postedOn),
-            detail: async () => { const x = await http(`${base}${j.externalPath}`); return x.jobPostingInfo?.jobDescription || ''; } });
-        }
-        if (offset + 20 >= (d.total || 0)) break;
-      }
-    }
-    return [...seen.values()];
+      await sleep(600);
+      return [...seen.values()];
+    });
   },
   async amazon() {
     const seen = new Map();
@@ -517,7 +541,7 @@ else (async () => {
   log(`Fetching openings from ${tracked.length} companies with a public job board…`);
   const jobs = [], coverage = {};
   const boardCache = new Map();
-  await pool(tracked, 8, async c => {
+  await pool(tracked, 4, async c => {
     const cov = coverage[c.id] = { boards: [], jobs: 0, scanned: 0 };
     for (const b of boardsFor(c)) {
       const bkey = JSON.stringify(b, ['ats', 'slug', 'host', 'site']);
@@ -640,10 +664,11 @@ else (async () => {
     coverage, errors: errors.slice(0, 200), jobs: finalJobs, events,
   };
   if (opt('only')) { console.log(JSON.stringify({ ...result, coverage: undefined }, null, 1).slice(0, 4000)); return; }
-  if (prev.jobs.length >= 10 && finalJobs.length === 0) {
-    const msg = `Scan returned no openings (previous feed has ${prev.jobs.length}). Kept the previous feed.`;
+  const floor = Math.max(25, Math.floor((prev.jobs.length || 0) * 0.45));
+  if (prev.jobs.length >= 10 && finalJobs.length < floor) {
+    const msg = `Scan returned only ${finalJobs.length} openings (previous feed has ${prev.jobs.length}; floor ${floor}). Kept the previous feed.`;
     log(msg);
-    writeScanStatus({ ok: false, error: msg, previousJobs: prev.jobs.length, errorCount: errors.length });
+    writeScanStatus({ ok: false, error: msg, previousJobs: prev.jobs.length, errorCount: errors.length, totals: result.totals });
     fs.appendFileSync(LOG, logLines.join('\n') + '\n\n');
     process.exit(1);
   }
