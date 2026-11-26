@@ -1,0 +1,131 @@
+{
+  "about": "Official India IT-services fresher / graduate-trainee / campus portals. These firms rarely expose Greenhouse/Lever/Workday boards for India GET roles, so we scrape their public hiring pages and emit apply-ready openings.",
+  "portals": [
+    {
+      "cid": "tcs",
+      "company": "TCS",
+      "title": "TCS All India NQT Hiring — Prime / Digital / Ninja (Freshers & 0–2 yrs)",
+      "url": "https://www.tcs.com/careers/india/tcs-all-india-nqt-hiring",
+      "applyUrl": "https://nextstep.tcs.com/campus/#/",
+      "loc": "Hyderabad · Bengaluru · Chennai · Pune · Mumbai · Delhi NCR · India",
+      "desc": "TCS All India National Qualifier Test (NQT) for batch 2024/2025/2026. Apply via TCS NextStep (IT category), click Apply For Drive, then sit the in-centre NQT for Prime / Digital / Ninja offers. Eligibility typically B.E/B.Tech/M.E/M.Tech/MCA/M.Sc, 60% aggregate, no pending backlogs. Helpdesk: ilp.support@tcs.com. Watch the NQT page and NextStep for the next registration window when the current drive is closed."
+    },
+    {
+      "cid": "infosys",
+      "company": "Infosys",
+      "title": "Infosys Graduate / Specialist Programmer hiring (Freshers)",
+      "url": "https://www.infosys.com/careers/graduates.html",
+      "applyUrl": "https://career.infosys.com/",
+      "loc": "Hyderabad · Bengaluru · Chennai · Pune · Mysuru · India",
+      "desc": "Infosys graduate hiring and exclusive Power Programmer / Specialist Programmer tracks. Freshers and final-year students apply through Infosys Careers; campus and off-campus drives (including HackWithInfy pathways) feed into Systems Engineer and related entry roles."
+    },
+    {
+      "cid": "wipro",
+      "company": "Wipro",
+      "title": "Wipro Graduate Engineer Trainee / Early Careers (Freshers)",
+      "url": "https://careers.wipro.com/freshers",
+      "applyUrl": "https://careers.wipro.com/careers-home/jobs",
+      "loc": "Bengaluru · Hyderabad · Chennai · Pune · Gurugram · India",
+      "desc": "Wipro Early Careers / fresher hiring for Graduate Engineer Trainee and Associate Developer roles. Search Graduate Engineer Trainee on the Wipro careers portal and apply online. Typically open to recent engineering / MCA graduates (check each posting for batch and location)."
+    },
+    {
+      "cid": "cognizant",
+      "company": "Cognizant",
+      "title": "Cognizant GenC — Analyst Trainee / Graduate hiring (Freshers)",
+      "url": "https://careers.cognizant.com/india-en/pathways-to-cognizant/genc-program/",
+      "applyUrl": "https://careers.cognizant.com/india-en/pathways-to-cognizant/genc-program/",
+      "loc": "Hyderabad · Bengaluru · Chennai · Pune · Coimbatore · India",
+      "desc": "Generation Cognizant (GenC) is Cognizant's India fresher hiring and development program. Off-campus and campus drives open for specific streams and batches (e.g. Analyst Trainee for 3-year degrees; engineering GenC drives when listed). Apply only from the official GenC page / linked Superset form."
+    },
+    {
+      "cid": "hcltech",
+      "company": "HCLTech",
+      "title": "HCLTech Graduate / Early Careers hiring (Freshers)",
+      "url": "https://www.hcltech.com/careers",
+      "applyUrl": "https://careers.hcltech.com/",
+      "loc": "Hyderabad · Bengaluru · Chennai · Noida · India",
+      "desc": "HCLTech graduate and early-career hiring across technology roles. Watch careers.hcltech.com for Graduate Engineer Trainee / fresher openings and off-campus drives."
+    },
+    {
+      "cid": "capgemini",
+      "company": "Capgemini",
+      "title": "Capgemini Students & Graduates — India fresher hiring",
+      "url": "https://www.capgemini.com/in-en/careers/",
+      "applyUrl": "https://www.capgemini.com/in-en/careers/job-search/?experience_level=entry_level",
+      "loc": "Hyderabad · Bengaluru · Chennai · Mumbai · Pune · India",
+      "desc": "Capgemini India students and graduates pathway. Search fresher / graduate / trainee roles on Capgemini careers and apply to open campus or off-campus drives."
+    },
+    {
+      "cid": "techmahindra",
+      "company": "Tech Mahindra",
+      "title": "Tech Mahindra Graduate / Fresher hiring",
+      "url": "https://www.techmahindra.com/careers/",
+      "applyUrl": "https://careers.techmahindra.com/",
+      "loc": "Hyderabad · Bengaluru · Chennai · Pune · India",
+      "desc": "Tech Mahindra campus and off-campus fresher hiring for graduate engineer / associate roles. Apply via the official Tech Mahindra careers site."
+    },
+    {
+      "cid": "ltimindtree",
+      "company": "LTIMindtree",
+      "title": "LTIMindtree Campus / Graduate Engineer Trainee (Freshers)",
+      "url": "https://www.ltimindtree.com/careers/",
+      "applyUrl": "https://www.ltimindtree.com/careers/",
+      "loc": "Hyderabad · Bengaluru · Chennai · Pune · Mumbai · India",
+      "desc": "LTIMindtree campus hiring and Graduate Engineer Trainee programs for freshers. Check the careers site for open GET / fresher postings and apply online."
+    },
+    {
+      "cid": "accenture",
+      "company": "Accenture",
+      "title": "Accenture Students & Graduates — India entry-level hiring",
+      "url": "https://www.accenture.com/in-en/careers",
+      "applyUrl": "https://www.accenture.com/in-en/careers/jobsearch?jk=graduate%20fresher&ct=India",
+      "loc": "Hyderabad · Bengaluru · Chennai · Pune · Mumbai · India",
+      "desc": "Accenture India students and graduates hiring for Associate / Analyst / fresher technology roles. Search entry-level openings on Accenture careers and apply."
+    },
+    {
+      "cid": "persistentsystems",
+      "company": "Persistent Systems",
+      "title": "Persistent Students & Graduates hiring (Freshers)",
+      "url": "https://careers.persistent.com/students-and-graduates/",
+      "applyUrl": "https://careers.persistent.com/",
+      "loc": "Hyderabad · Bengaluru · Pune · Nagpur · India",
+      "desc": "Persistent Systems graduate and student hiring programs. Apply via Persistent careers for fresher / graduate engineer openings."
+    },
+    {
+      "cid": "mphasis",
+      "company": "Mphasis",
+      "title": "Mphasis Campus / Fresher hiring",
+      "url": "https://careers.mphasis.com/",
+      "applyUrl": "https://careers.mphasis.com/",
+      "loc": "Hyderabad · Bengaluru · Chennai · Pune · India",
+      "desc": "Mphasis campus and fresher hiring for graduate trainee / associate roles. Apply on the Mphasis careers portal."
+    },
+    {
+      "cid": "hexaware",
+      "company": "Hexaware",
+      "title": "Hexaware Graduate / Fresher hiring",
+      "url": "https://hexaware.com/careers/",
+      "applyUrl": "https://hexaware.com/careers/",
+      "loc": "Chennai · Hyderabad · Bengaluru · Pune · India",
+      "desc": "Hexaware early-career and fresher technology hiring. Check careers for Graduate Engineer Trainee / fresher openings and apply online."
+    },
+    {
+      "cid": "genpact",
+      "company": "Genpact",
+      "title": "Genpact Graduate / Early Careers (Freshers)",
+      "url": "https://www.genpact.com/careers",
+      "applyUrl": "https://www.genpact.com/careers/job-search",
+      "loc": "Hyderabad · Bengaluru · Delhi NCR · India",
+      "desc": "Genpact graduate and early-career hiring in India. Search fresher / graduate trainee roles and apply on Genpact careers."
+    },
+    {
+      "cid": "dxctechnology",
+      "company": "DXC Technology",
+      "title": "DXC Technology Graduate / Fresher hiring",
+      "url": "https://careers.dxc.com/",
+      "applyUrl": "https://dxctechnology.wd1.myworkdayjobs.com/DXCJobs",
+      "loc": "Hyderabad · Bengaluru · Chennai · India",
+      "desc": "DXC Technology entry-level and graduate hiring in India. Search fresher / graduate / associate roles on DXC careers / Workday and apply."
+    }
+  ]
+}

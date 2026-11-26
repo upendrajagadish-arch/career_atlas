@@ -29,6 +29,7 @@ const DATA_DIR = path.join(ROOT, 'data');
 const DATASET = path.join(ROOT, 'Company_Role_Skill_Mind_Map_Data_2026.json');
 const SOURCES = path.join(__dirname, 'job-sources.json');
 const INDIA_EXTRA = path.join(__dirname, 'india-ats-extra.json');
+const INDIA_IT_PORTALS = path.join(__dirname, 'india-it-portals.json');
 const CONFIG = path.join(__dirname, 'config.json');
 const OUT = path.join(DATA_DIR, 'jobs.json');
 const ATS_MAP = path.join(DATA_DIR, 'ats-map.json');
@@ -417,6 +418,7 @@ const ATS_LABEL = {
   greenhouse: 'Greenhouse', lever: 'Lever', ashby: 'Ashby', smartrecruiters: 'SmartRecruiters', workable: 'Workable', recruitee: 'Recruitee',
   breezy: 'Breezy HR', bamboo: 'BambooHR', workday: 'Workday', amazon: 'amazon.jobs', microsoft: 'Microsoft Careers', oracle: 'Oracle Recruiting',
   adzuna: 'Adzuna', jooble: 'Jooble', remotive: 'Remotive', arbeitnow: 'Arbeitnow', remoteok: 'RemoteOK',
+  portal: 'Company careers portal',
 };
 
 /* ------------------------------------------------------------------ board discovery */
@@ -447,6 +449,58 @@ async function discover(company) {
     found.push({ ats: t.ats, slug: t.slug, india, total: jobs.length });
   }
   return found;
+}
+
+/* ------------------------------------------------------------------ India IT services fresher / GET portals
+ * TCS / Infosys / Wipro / Cognizant etc. do not expose Greenhouse/Lever boards for India campus hiring.
+ * We scrape their public fresher pages and emit apply-ready openings so they appear in the feed.
+ */
+const PORTAL_CLOSED_RE = /registration\s+status\s*:\s*closed|applications?\s+(are\s+)?closed|currently\s+closed|no\s+(current\s+)?openings|hiring\s+has\s+(been\s+)?closed|drive\s+is\s+closed/i;
+const PORTAL_OPEN_RE = /\b(apply\s+now|apply\s+here|we'?re\s+hiring|registration\s+(is\s+)?open|register\s+now|applications?\s+open|click\s+to\s+apply|apply\s+for\s+drive|off[\s-]?campus|graduate\s+engineer\s+trainee|\bGET\b|\bnqt\b|\bgenc\b|freshers?|graduates?\s+and\s+students|early\s+careers?|students?\s+and\s+graduates?)\b/i;
+async function indiaITPortalJobs(dataset, onlyId) {
+  const cfg = readJSON(INDIA_IT_PORTALS, { portals: [] });
+  const byId = new Map((dataset.companies || []).map(c => [c.id, c]));
+  const out = [];
+  for (const p of cfg.portals || []) {
+    if (onlyId && p.cid !== onlyId) continue;
+    const c = byId.get(p.cid) || null;
+    const checkUrl = p.url || p.applyUrl;
+    let closed = false;
+    try {
+      const html = await http(checkUrl, { type: 'text', timeout: 20000, retries: 1 });
+      const text = stripHTML(html).slice(0, 12000);
+      closed = PORTAL_CLOSED_RE.test(text);
+      if (!PORTAL_OPEN_RE.test(text) && !PORTAL_OPEN_RE.test(p.title + ' ' + (p.desc || ''))) {
+        log(`  portal ${p.company}: page loaded but no fresher keywords — still listing apply link`);
+      }
+    } catch (e) {
+      // Cloudflare / bot walls are common (e.g. Cognizant). Still publish the curated apply link.
+      log(`  portal ${p.company}: page check ${e.message} — keeping curated apply link`);
+    }
+    // Always keep curated India IT fresher portals; closed windows are labelled in the title.
+    const title = closed
+      ? `${p.title.replace(/\s*[—–-]\s*$/, '')} (registration currently closed — watch portal)`
+      : p.title;
+    const desc = [
+      p.desc || '',
+      closed ? 'Latest check: registration/application window looks closed on the careers page; reopen dates change often — re-check the apply link.' : 'Official fresher / graduate-trainee pathway. Apply only on the company portal.',
+      `Portal: ${checkUrl}`,
+    ].join(' ');
+    out.push({
+      company: c || { id: p.cid, name: p.company, categories: ['IT Services / Consulting'] },
+      raw: {
+        id: `portal-${p.cid}`,
+        title,
+        loc: (p.loc || 'India') + (/\bindia\b/i.test(p.loc || '') ? '' : ' India'),
+        url: p.applyUrl || p.url,
+        posted: today,
+        desc,
+        hint: { level: 'Fresher / entry level', why: 'India IT-services fresher / graduate-trainee portal' },
+      },
+      meta: { closed, page: checkUrl },
+    });
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------ aggregators (optional keys) */
@@ -588,12 +642,16 @@ else (async () => {
   // Prefer startups, agencies and IT services; put mega banks / FAANG Workday boards last (or skip).
   const preferCats = new Set(sources.preferCategories || ['Startup / Product', 'Product / SaaS', 'Agency / Digital', 'Agency / Staffing', 'IT Services / Consulting']);
   const megaNames = new Set((sources.megaCompanies || []).map(norm));
+  const portalCids = new Set((readJSON(INDIA_IT_PORTALS, { portals: [] }).portals || []).map(p => p.cid));
   const companyRank = c => {
     if (!c) return 3;
+    // India IT majors with fresher portals — keep near the top of the feed.
+    if (portalCids.has(c.id) || (c.categories || []).some(x => /IT Services/.test(x))) {
+      if (!megaNames.has(norm(c.name))) return 0;
+    }
     if (megaNames.has(norm(c.name))) return 9;
     const cats = c.categories || [];
     if (cats.some(x => preferCats.has(x) || /Startup|Agency|Product/.test(x))) return 0;
-    if (cats.some(x => /IT Services/.test(x))) return 1;
     if (cats.some(x => /^MNC/.test(x))) return 5;
     return 3;
   };
@@ -696,7 +754,25 @@ else (async () => {
     });
   }
 
-  /* 2. aggregators + free public boards */
+  /* 2. India IT services fresher / GET portals (TCS, Infosys, Wipro, Cognizant, …) */
+  log('Scraping India IT-services fresher / graduate-trainee portals…');
+  const portalHits = await indiaITPortalJobs(dataset, opt('only') || null);
+  for (const hit of portalHits) {
+    const c = (hit.company?.id && byNorm.get(norm(hit.company.name))) || dataset.companies.find(x => x.id === hit.company?.id) || hit.company;
+    const j = hit.raw;
+    const a = assess(j.title, j.desc, j.hint) || j.hint;
+    if (!a) continue;
+    jobs.push(makeJob(c, 'portal', j, a, j.desc, c?.name));
+    if (c?.id) {
+      const cov = coverage[c.id] ||= { boards: [], jobs: 0, scanned: 0, rank: companyRank(c) };
+      cov.boards.push({ ats: 'portal', label: ATS_LABEL.portal, url: hit.meta.page });
+      cov.scanned++;
+      cov.jobs++;
+    }
+    log(`  ${c?.name || 'portal'}: 1 fresher/GET portal opening${hit.meta.closed ? ' (window looks closed)' : ''}`);
+  }
+
+  /* 3. aggregators + free public boards */
   const agg = await aggregatorJobs(cfg, sources.aggregatorQueries || []);
   for (const j of agg.jobs) {
     if (!indiaCity(j.loc) && !/india|worldwide|anywhere|apac|asia|remote/i.test(j.loc || '')) continue;
@@ -725,7 +801,7 @@ else (async () => {
   for (const cov of Object.values(coverage)) cov.jobs = 0;
   for (const j of finalJobs) if (j.cid && coverage[j.cid]) coverage[j.cid].jobs++;
 
-  /* 3. hiring events */
+  /* 4. hiring events */
   let events = (prev.events || []).map(e => ({ ...e, type: eventType(e.title) })).filter(e => e.type);
   if (!flag('no-events')) {
     log('Collecting hiring events & drives from Google News…');
@@ -812,5 +888,6 @@ function boardURL(b) {
     breezy: `https://${b.slug}.breezy.hr`, bamboo: `https://${b.slug}.bamboohr.com/careers`,
     workday: b.host && `https://${b.host}/${b.site}`, amazon: 'https://www.amazon.jobs/en/locations/india', microsoft: 'https://jobs.careers.microsoft.com/global/en/search?lc=India',
     oracle: b.host && `https://${b.host}/hcmUI/CandidateExperience/en/sites/${b.site}`,
+    portal: b.url || null,
   }[b.ats] || null;
 }

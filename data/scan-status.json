@@ -1,17 +1,18 @@
 {
   "ok": true,
-  "lastScanned": "2026-11-26T07:04:29.400Z",
+  "lastScanned": "2026-11-26T08:30:17.409Z",
   "trigger": "local",
   "date": "2026-11-26",
   "durationSec": 778,
   "totals": {
-    "jobs": 66,
+    "jobs": 80,
     "newToday": 27,
-    "companiesWithJobs": 16,
+    "companiesWithJobs": 30,
     "trackedCompanies": 99,
     "events": 29,
     "requests": 5446
   },
   "errorCount": 247,
-  "previousJobs": 50
+  "previousJobs": 50,
+  "note": "India IT fresher portals merged (TCS/Infosys/Wipro/Cognizant+)"
 }
