@@ -113,6 +113,10 @@
     "hackathon registration 2026 students India",
     "hackathon \"applications open\" OR \"register now\" India",
     "\"coding challenge\" OR \"coding contest\" registration 2026 India",
+    "startup fresher hiring India apply",
+    "\"product company\" fresher hiring India",
+    "staffing OR \"hiring agency\" fresher jobs India apply",
+    "IT services fresher hiring drive India 2026",
     "ServiceNow freshers hiring apply",
     "Salesforce freshers hiring apply"
   ],
@@ -125,6 +129,36 @@
     "data analyst fresher",
     "qa tester fresher",
     "sap abap fresher",
-    "rpa developer fresher"
-  ]
+    "rpa developer fresher",
+    "frontend developer fresher",
+    "backend developer fresher",
+    "full stack fresher",
+    "devops fresher",
+    "java developer fresher",
+    "python developer fresher",
+    "react developer fresher",
+    "android developer fresher",
+    "business analyst fresher",
+    "support engineer fresher",
+    "staffing consultant fresher",
+    "recruitment fresher",
+    "digital marketing fresher"
+  ],
+  "preferCategories": ["Startup / Product", "Product / SaaS", "Agency / Digital", "Agency / Staffing", "IT Services / Consulting"],
+  "megaCompanies": [
+    "JPMorgan Chase", "Morgan Stanley", "Citi", "Wells Fargo", "Barclays", "Deutsche Bank",
+    "Bank of America", "Goldman Sachs", "HSBC", "UBS", "State Street", "Northern Trust",
+    "Fidelity Investments", "Mastercard", "American Express", "Visa", "Amazon", "Microsoft",
+    "Google", "Meta", "Apple", "Oracle", "Salesforce", "NVIDIA", "Intel", "Cisco", "Qualcomm",
+    "Accenture", "PwC", "Deloitte", "EY", "KPMG", "IBM", "Cognizant", "Infosys", "TCS", "Wipro",
+    "HCLTech", "Capgemini", "Boeing", "Shell", "Pfizer", "Novartis", "Sanofi", "AstraZeneca",
+    "GSK", "Roche", "Amgen", "Medtronic", "Bristol Myers Squibb", "Broadcom", "VMware (Broadcom)",
+    "Micron", "Applied Materials", "Analog Devices", "NXP Semiconductors", "HP", "HPE", "Adobe",
+    "PayPal", "Red Hat", "Thomson Reuters", "Target in India", "Synchrony", "T-Mobile",
+    "Caterpillar", "Philips", "Johnson Controls", "S&P Global", "Broadridge", "Invesco", "CIBC",
+    "GE Healthcare", "GE Aerospace", "LPL Financial", "Expedia Group", "Lowe’s India", "Aptiv",
+    "Harman", "Harman Connected Services", "Rolls-Royce", "Thales", "F5 Networks", "Verizon",
+    "Commonwealth Bank", "DXC Technology", "Autodesk", "Workday"
+  ],
+  "skipMegaWorkday": true
 }

@@ -28,6 +28,7 @@ const ROOT = path.resolve(__dirname, '..');
 const DATA_DIR = path.join(ROOT, 'data');
 const DATASET = path.join(ROOT, 'Company_Role_Skill_Mind_Map_Data_2026.json');
 const SOURCES = path.join(__dirname, 'job-sources.json');
+const INDIA_EXTRA = path.join(__dirname, 'india-ats-extra.json');
 const CONFIG = path.join(__dirname, 'config.json');
 const OUT = path.join(DATA_DIR, 'jobs.json');
 const ATS_MAP = path.join(DATA_DIR, 'ats-map.json');
@@ -394,8 +395,29 @@ const ATS = {
     }
     return [...seen.values()];
   },
+  async breezy(b) {
+    const d = await http(`https://${b.slug}.breezy.hr/json`);
+    return (Array.isArray(d) ? d : []).map(j => ({
+      id: j._id || j.id || j.url, title: j.name || j.title, loc: [j.location?.name, j.location?.country?.name, ...(j.locations || []).map(l => l.name || l)].join(' | '),
+      url: j.url || `https://${b.slug}.breezy.hr/p/${j._id}`, posted: j.published_date || j.created_date,
+      desc: stripHTML(j.description || ''), hint: /intern/i.test(j.type?.name || '') ? { level: 'Internship', why: 'Employment type is Intern' } : null,
+    }));
+  },
+  async bamboo(b) {
+    const d = await http(`https://${b.slug}.bamboohr.com/careers/list`);
+    const list = d.result || d.meta?.result || d.jobs || [];
+    return (Array.isArray(list) ? list : []).map(j => ({
+      id: j.id || j.jobOpeningId || j.atsJobId, title: j.jobOpeningName || j.titleName || j.title,
+      loc: [j.locationLabel, j.location?.city, j.location?.state, j.departmentLabel].join(' | '),
+      url: j.jobOpeningShareUrl || `https://${b.slug}.bamboohr.com/careers/${j.id}`, posted: j.postedDate || null, desc: '',
+    }));
+  },
 };
-const ATS_LABEL = { greenhouse: 'Greenhouse', lever: 'Lever', ashby: 'Ashby', smartrecruiters: 'SmartRecruiters', workable: 'Workable', recruitee: 'Recruitee', workday: 'Workday', amazon: 'amazon.jobs', microsoft: 'Microsoft Careers', oracle: 'Oracle Recruiting', adzuna: 'Adzuna', jooble: 'Jooble' };
+const ATS_LABEL = {
+  greenhouse: 'Greenhouse', lever: 'Lever', ashby: 'Ashby', smartrecruiters: 'SmartRecruiters', workable: 'Workable', recruitee: 'Recruitee',
+  breezy: 'Breezy HR', bamboo: 'BambooHR', workday: 'Workday', amazon: 'amazon.jobs', microsoft: 'Microsoft Careers', oracle: 'Oracle Recruiting',
+  adzuna: 'Adzuna', jooble: 'Jooble', remotive: 'Remotive', arbeitnow: 'Arbeitnow', remoteok: 'RemoteOK',
+};
 
 /* ------------------------------------------------------------------ board discovery */
 const STOP = /\b(technologies|technology|tech|solutions|solution|services|systems|software|labs?|global|india|pvt|private|ltd|limited|inc|group|corp|corporation|company|the|consulting|digital|centre|center|gcc|research|and|development|innovation|engineering|technology center|see)\b/g;
@@ -411,7 +433,7 @@ const BLOCKED = new Set(readJSON(SOURCES, {}).blockedBoards || []);
 async function discover(company) {
   const found = [];
   const tries = [];
-  for (const slug of slugCandidates(company.name)) for (const ats of ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters', 'recruitee']) tries.push({ ats, slug });
+  for (const slug of slugCandidates(company.name)) for (const ats of ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters', 'recruitee', 'breezy', 'bamboo']) tries.push({ ats, slug });
   for (const t of tries) {
     if (found.some(f => f.ats === t.ats) || BLOCKED.has(`${t.ats}/${t.slug}`)) continue;
     let jobs;
@@ -451,6 +473,34 @@ async function aggregatorJobs(cfg, queries) {
       } catch (e) { log('  Jooble', q, e.message); }
     }
   }
+  // Free public boards (no key). Keep India / APAC / remote-friendly fresher roles only.
+  try {
+    used.push('Remotive');
+    const d = await http('https://remotive.com/api/remote-jobs?category=software-dev');
+    for (const j of d.jobs || []) {
+      const loc = `${j.candidate_required_location || ''} ${j.job_type || ''} India`;
+      if (!/india|worldwide|anywhere|apac|asia/i.test(loc) && !indiaCity(j.candidate_required_location)) continue;
+      out.push({ ats: 'remotive', company: j.company_name, id: j.id, title: j.title, loc, url: j.url, posted: j.publication_date, desc: stripHTML(j.description || '').slice(0, 2500) });
+    }
+  } catch (e) { log('  Remotive', e.message); }
+  try {
+    used.push('Arbeitnow');
+    const d = await http('https://www.arbeitnow.com/api/job-board-api');
+    for (const j of d.data || []) {
+      const loc = `${j.location || ''} ${(j.tags || []).join(' ')} India`;
+      if (!/india|remote|worldwide|anywhere|apac/i.test(loc)) continue;
+      out.push({ ats: 'arbeitnow', company: j.company_name, id: j.slug || j.url, title: j.title, loc, url: j.url, posted: j.created_at ? new Date(j.created_at * 1000).toISOString() : null, desc: stripHTML(j.description || '').slice(0, 2500) });
+    }
+  } catch (e) { log('  Arbeitnow', e.message); }
+  try {
+    used.push('RemoteOK');
+    const d = await http('https://remoteok.com/api', { type: 'json', headers: { accept: 'application/json' } });
+    for (const j of (Array.isArray(d) ? d : []).slice(1)) {
+      const loc = `${j.location || ''} ${(j.tags || []).join(' ')}`;
+      if (!/india|worldwide|anywhere|apac|asia|remote/i.test(loc)) continue;
+      out.push({ ats: 'remoteok', company: j.company, id: j.id || j.slug, title: j.position || j.title, loc: loc + ' India', url: j.url || j.apply_url, posted: j.date, desc: stripHTML(j.description || '').slice(0, 2500) });
+    }
+  } catch (e) { log('  RemoteOK', e.message); }
   return { jobs: out, used };
 }
 
@@ -535,14 +585,54 @@ else (async () => {
     fs.writeFileSync(ATS_MAP, JSON.stringify(atsMap, null, 1));
   }
 
-  const boardsFor = c => [...(curated[c.id] || []), ...(atsMap.boards[c.id] || []).filter(b => !BLOCKED.has(`${b.ats}/${b.slug}`))];
+  // Prefer startups, agencies and IT services; put mega banks / FAANG Workday boards last (or skip).
+  const preferCats = new Set(sources.preferCategories || ['Startup / Product', 'Product / SaaS', 'Agency / Digital', 'Agency / Staffing', 'IT Services / Consulting']);
+  const megaNames = new Set((sources.megaCompanies || []).map(norm));
+  const companyRank = c => {
+    if (!c) return 3;
+    if (megaNames.has(norm(c.name))) return 9;
+    const cats = c.categories || [];
+    if (cats.some(x => preferCats.has(x) || /Startup|Agency|Product/.test(x))) return 0;
+    if (cats.some(x => /IT Services/.test(x))) return 1;
+    if (cats.some(x => /^MNC/.test(x))) return 5;
+    return 3;
+  };
+  const indiaExtra = (readJSON(INDIA_EXTRA, { boards: [] }).boards || []).filter(b => b.ats && b.slug && !BLOCKED.has(`${b.ats}/${b.slug}`));
+  for (const b of indiaExtra) {
+    if (!b.cid) continue;
+    const c = dataset.companies.find(x => x.id === b.cid);
+    if (!c) continue;
+    const list = curated[c.id] ||= [];
+    if (!list.some(x => x.ats === b.ats && x.slug === b.slug)) list.push({ company: c.name, ats: b.ats, slug: b.slug });
+  }
+
+  // Fresh discovery for preferred companies that still have no board.
+  const preferMissing = companies.filter(c => companyRank(c) <= 1 && !(curated[c.id] || []).length && !(atsMap.boards[c.id] || []).length);
+  if (preferMissing.length && !flag('no-discover')) {
+    log(`Discovering boards for ${preferMissing.length} startups / agencies / product companies…`);
+    await pool(preferMissing, 10, async c => {
+      const found = await discover(c);
+      atsMap.boards[c.id] = found;
+      if (found.length) log(`  + ${c.name}: ${found.map(f => `${f.ats}/${f.slug} (${f.india} in India)`).join(', ')}`);
+    });
+    fs.writeFileSync(ATS_MAP, JSON.stringify(atsMap, null, 1));
+  }
+
+  const boardsFor = c => {
+    const list = [...(curated[c.id] || []), ...(atsMap.boards[c.id] || []).filter(b => !BLOCKED.has(`${b.ats}/${b.slug}`))];
+    if (sources.skipMegaWorkday !== false && megaNames.has(norm(c.name))) return list.filter(b => b.ats !== 'workday');
+    return list;
+  };
   const claimed = new Map();
-  const tracked = companies.filter(c => boardsFor(c).length);
-  log(`Fetching openings from ${tracked.length} companies with a public job board…`);
+  const tracked = companies.filter(c => boardsFor(c).length).sort((a, b) => companyRank(a) - companyRank(b) || a.name.localeCompare(b.name));
+  const fast = tracked.filter(c => boardsFor(c).every(b => b.ats !== 'workday'));
+  const slow = tracked.filter(c => boardsFor(c).some(b => b.ats === 'workday'));
+  log(`Fetching openings from ${tracked.length} companies (${fast.length} fast ATS first, ${slow.length} Workday later; startups/agencies preferred)…`);
   const jobs = [], coverage = {};
   const boardCache = new Map();
-  await pool(tracked, 4, async c => {
-    const cov = coverage[c.id] = { boards: [], jobs: 0, scanned: 0 };
+
+  async function ingestCompany(c) {
+    const cov = coverage[c.id] = { boards: [], jobs: 0, scanned: 0, rank: companyRank(c) };
     for (const b of boardsFor(c)) {
       const bkey = JSON.stringify(b, ['ats', 'slug', 'host', 'site']);
       cov.boards.push({ ats: b.ats, label: ATS_LABEL[b.ats], url: boardURL(b) });
@@ -559,18 +649,16 @@ else (async () => {
       }
       if (claimed.has(bkey) && claimed.get(bkey) !== c.id) { cov.sharedWith = claimed.get(bkey); continue; }
       claimed.set(bkey, c.id);
-      const india = raw.filter(j => indiaCity(j.loc));
+      const india = raw.filter(j => indiaCity(j.loc) || /india|worldwide|anywhere|apac|asia|remote/i.test(j.loc || ''));
       cov.scanned += india.length;
       const bank = c.categories.some(x => /BFSI/.test(x)) || /bank|financial|capital|invest|trust|chase|morgan|citi|barclays|hsbc|ubs|schwab|fidelity/i.test(c.name);
       const items = india.map(j => {
         const hint = j.hint || (bank && /\banalyst\b/i.test(j.title) ? { level: 'Fresher / entry level', why: 'At banks and financial firms “Analyst” is the entry-level title — confirm the experience in the JD' } : null);
         return { j, hint, desc: j.desc, a: assess(j.title, j.desc, hint) };
       });
-      // Read the full JD for listings without one, including ones already kept on their title, so an
-      // experience requirement in the JD can still rule them out.
       const toDetail = items.filter(x => x.j.detail && needsDetail(x.j.title) && stripHTML(x.desc).length < 400)
-        .sort((a, b) => !!b.a - !!a.a).slice(0, 140);
-      await pool(toDetail, 6, async x => {
+        .sort((a, b) => !!b.a - !!a.a).slice(0, 80);
+      await pool(toDetail, 4, async x => {
         try { x.desc = `${x.desc || ''} ${await x.j.detail()}`; x.a = assess(x.j.title, x.desc, x.hint); } catch { /* keep listing-only verdict */ }
       });
       for (const { j, a, desc } of items) {
@@ -581,12 +669,37 @@ else (async () => {
       }
     }
     log(`  ${c.name}: ${cov.jobs} fresher/intern openings (from ${cov.scanned} India postings)`);
-  });
+  }
 
-  /* 2. aggregators */
+  await pool(fast, 8, ingestCompany);
+  await pool(slow, 2, ingestCompany);
+
+  // Floating Indian startup / SaaS boards not yet in the mind-map company list.
+  const floating = indiaExtra.filter(b => !b.cid);
+  if (floating.length) {
+    log(`Fetching ${floating.length} extra Indian startup / product boards…`);
+    await pool(floating, 8, async b => {
+      const bkey = `${b.ats}/${b.slug}`;
+      if (claimed.has(bkey)) return;
+      let raw;
+      try { raw = await ATS[b.ats](b); } catch (e) { errors.push(`${b.company} (${ATS_LABEL[b.ats]}): ${e.message}`); return; }
+      claimed.set(bkey, b.company);
+      const india = (raw || []).filter(j => indiaCity(j.loc) || /india|worldwide|anywhere|apac|asia|remote/i.test(j.loc || ''));
+      let kept = 0;
+      for (const j of india) {
+        const a = assess(j.title, j.desc); if (!a) continue;
+        const c = byNorm.get(norm(b.company)) || null;
+        jobs.push(makeJob(c, b.ats, j, a, j.desc, b.company));
+        kept++;
+      }
+      if (kept || india.length) log(`  ${b.company}: ${kept} fresher/intern openings (from ${india.length} India postings)`);
+    });
+  }
+
+  /* 2. aggregators + free public boards */
   const agg = await aggregatorJobs(cfg, sources.aggregatorQueries || []);
   for (const j of agg.jobs) {
-    if (!indiaCity(j.loc)) continue;
+    if (!indiaCity(j.loc) && !/india|worldwide|anywhere|apac|asia|remote/i.test(j.loc || '')) continue;
     const a = assess(j.title, j.desc); if (!a) continue;
     const c = byNorm.get(norm(j.company)) || null;
     jobs.push(makeJob(c, j.ats, j, a, j.desc, j.company));
@@ -596,18 +709,19 @@ else (async () => {
     const key = `${ats}:${c ? c.id : norm(companyName)}:${j.id}`;
     const { track, roles } = trackOf(j.title, stripHTML(desc).slice(0, 400));
     const city = indiaCity(j.loc);
+    const rank = companyRank(c) ?? (megaNames.has(norm(companyName)) ? 9 : 2);
     return {
       key, cid: c ? c.id : null, company: c ? c.name : (companyName || 'Unknown company'), title: String(j.title).trim(),
       loc: uniq(String(j.loc).replace(/\(do not use\)/gi, '').split('|').map(s => s.replace(/\s+/g, ' ').trim())).filter(s => s && s !== 'India').slice(0, 3).join(' · ') || 'India',
       city: MAIN_CITIES.includes(city) ? city : city || 'Other India', remote: /remote/i.test(j.loc),
       url: j.url, posted: isoDay(j.posted), source: ATS_LABEL[ats], level: a.level, why: a.why, yrs: a.yrs ?? null,
-      track, roles, kw: jobKeywords(`${j.title} ${stripHTML(desc || '')}`), first: firstSeen.get(key) || today,
+      track, roles, kw: jobKeywords(`${j.title} ${stripHTML(desc || '')}`), first: firstSeen.get(key) || today, prefer: rank,
     };
   }
 
-  // de-duplicate (same company + title + city, and the same apply URL)
+  // Prefer startups / agencies first in the feed, then newest postings.
   const finalJobs = dedupeJobs(jobs)
-    .sort((a, b) => (b.first || '').localeCompare(a.first || '') || (b.posted || '').localeCompare(a.posted || '') || a.company.localeCompare(b.company));
+    .sort((a, b) => (a.prefer - b.prefer) || (b.first || '').localeCompare(a.first || '') || (b.posted || '').localeCompare(a.posted || '') || a.company.localeCompare(b.company));
   for (const cov of Object.values(coverage)) cov.jobs = 0;
   for (const j of finalJobs) if (j.cid && coverage[j.cid]) coverage[j.cid].jobs++;
 
@@ -695,6 +809,7 @@ function boardURL(b) {
   return {
     greenhouse: `https://boards.greenhouse.io/${b.slug}`, lever: `https://jobs.lever.co/${b.slug}`, ashby: `https://jobs.ashbyhq.com/${b.slug}`,
     smartrecruiters: `https://careers.smartrecruiters.com/${b.slug}`, workable: `https://apply.workable.com/${b.slug}`, recruitee: `https://${b.slug}.recruitee.com`,
+    breezy: `https://${b.slug}.breezy.hr`, bamboo: `https://${b.slug}.bamboohr.com/careers`,
     workday: b.host && `https://${b.host}/${b.site}`, amazon: 'https://www.amazon.jobs/en/locations/india', microsoft: 'https://jobs.careers.microsoft.com/global/en/search?lc=India',
     oracle: b.host && `https://${b.host}/hcmUI/CandidateExperience/en/sites/${b.site}`,
   }[b.ats] || null;

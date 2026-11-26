@@ -1,0 +1,1541 @@
+{
+  "about": "Extra Greenhouse / Lever / Ashby boards for Indian startups, product companies and SaaS hirers. Prefer these over mega bank Workday boards.",
+  "boards": [
+    {
+      "company": "BharatPe",
+      "cid": "bharatpe",
+      "ats": "greenhouse",
+      "slug": "bharatpe"
+    },
+    {
+      "company": "Perfios",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "perfios"
+    },
+    {
+      "company": "Setu",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "setu"
+    },
+    {
+      "company": "Juspay",
+      "cid": "juspay",
+      "ats": "greenhouse",
+      "slug": "juspay"
+    },
+    {
+      "company": "Niyo",
+      "cid": "niyo",
+      "ats": "greenhouse",
+      "slug": "niyo"
+    },
+    {
+      "company": "Cashfree Payments",
+      "cid": "cashfreepayments",
+      "ats": "greenhouse",
+      "slug": "cashfree"
+    },
+    {
+      "company": "Happay",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "happay"
+    },
+    {
+      "company": "Open Financial Technologies",
+      "cid": "openfinancialtechnologies",
+      "ats": "greenhouse",
+      "slug": "open-financial"
+    },
+    {
+      "company": "CRED",
+      "cid": "cred",
+      "ats": "greenhouse",
+      "slug": "credavenue"
+    },
+    {
+      "company": "BrowserStack",
+      "cid": "browserstack",
+      "ats": "greenhouse",
+      "slug": "browserstack"
+    },
+    {
+      "company": "Freshworks",
+      "cid": "freshworks",
+      "ats": "greenhouse",
+      "slug": "freshworks"
+    },
+    {
+      "company": "Chargebee",
+      "cid": "chargebee",
+      "ats": "greenhouse",
+      "slug": "chargebee"
+    },
+    {
+      "company": "Whatfix",
+      "cid": "whatfix",
+      "ats": "greenhouse",
+      "slug": "whatfix"
+    },
+    {
+      "company": "Darwinbox",
+      "cid": "darwinbox",
+      "ats": "greenhouse",
+      "slug": "darwinbox"
+    },
+    {
+      "company": "Sprinklr",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "sprinklr"
+    },
+    {
+      "company": "Druva",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "druva"
+    },
+    {
+      "company": "Exotel",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "exotel"
+    },
+    {
+      "company": "CleverTap",
+      "cid": "clevertap",
+      "ats": "greenhouse",
+      "slug": "clevertap"
+    },
+    {
+      "company": "MoEngage",
+      "cid": "moengage",
+      "ats": "greenhouse",
+      "slug": "moengage"
+    },
+    {
+      "company": "WebEngage",
+      "cid": "webengage",
+      "ats": "greenhouse",
+      "slug": "webengage"
+    },
+    {
+      "company": "Netcore Cloud",
+      "cid": "netcorecloud",
+      "ats": "greenhouse",
+      "slug": "netcorecloud"
+    },
+    {
+      "company": "Helpshift",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "helpshift"
+    },
+    {
+      "company": "Kapture CRM",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "kapture"
+    },
+    {
+      "company": "LeadSquared",
+      "cid": "leadsquared",
+      "ats": "greenhouse",
+      "slug": "leadsquared"
+    },
+    {
+      "company": "Salesken",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "salesken"
+    },
+    {
+      "company": "Uniphore",
+      "cid": "uniphore",
+      "ats": "greenhouse",
+      "slug": "uniphore"
+    },
+    {
+      "company": "Unacademy",
+      "cid": "unacademy",
+      "ats": "greenhouse",
+      "slug": "unacademy"
+    },
+    {
+      "company": "upGrad",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "upgrad"
+    },
+    {
+      "company": "Simplilearn",
+      "cid": "simplilearn",
+      "ats": "greenhouse",
+      "slug": "simplilearn"
+    },
+    {
+      "company": "Scaler",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "scaler"
+    },
+    {
+      "company": "Great Learning",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "greatlearning"
+    },
+    {
+      "company": "Innovaccer",
+      "cid": "innovaccer",
+      "ats": "greenhouse",
+      "slug": "innovaccer"
+    },
+    {
+      "company": "Niramai",
+      "cid": "niramai",
+      "ats": "greenhouse",
+      "slug": "niramai"
+    },
+    {
+      "company": "Portea Medical",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "portea"
+    },
+    {
+      "company": "Practo",
+      "cid": "practo",
+      "ats": "greenhouse",
+      "slug": "practo"
+    },
+    {
+      "company": "Healthplix",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "healthplix"
+    },
+    {
+      "company": "Lenskart",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "lenskart"
+    },
+    {
+      "company": "Mamaearth",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "mamaearth"
+    },
+    {
+      "company": "Purplle",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "purplle"
+    },
+    {
+      "company": "Zivame",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "zivame"
+    },
+    {
+      "company": "Shadowfax",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "shadowfax"
+    },
+    {
+      "company": "Rivigo",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "rivigo"
+    },
+    {
+      "company": "ElasticRun",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "elasticrun"
+    },
+    {
+      "company": "Gupshup",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "gupshup"
+    },
+    {
+      "company": "Hasura",
+      "cid": "hasura",
+      "ats": "greenhouse",
+      "slug": "hasura"
+    },
+    {
+      "company": "Mad Street Den",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "madstreetden"
+    },
+    {
+      "company": "Arya.ai",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "arya-ai"
+    },
+    {
+      "company": "Mu Sigma",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "mu-sigma"
+    },
+    {
+      "company": "Tiger Analytics",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "tigeranalytics"
+    },
+    {
+      "company": "Fractal Analytics",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "fractal"
+    },
+    {
+      "company": "LatentView Analytics",
+      "cid": "latentviewanalytics",
+      "ats": "greenhouse",
+      "slug": "latentview"
+    },
+    {
+      "company": "InMobi",
+      "cid": "inmobi",
+      "ats": "greenhouse",
+      "slug": "inmobi"
+    },
+    {
+      "company": "Gojek India",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "gojek"
+    },
+    {
+      "company": "Dunzo",
+      "cid": "dunzo",
+      "ats": "greenhouse",
+      "slug": "dunzo"
+    },
+    {
+      "company": "Vedantu",
+      "cid": "vedantu",
+      "ats": "greenhouse",
+      "slug": "vedantu"
+    },
+    {
+      "company": "Navi",
+      "cid": "navi",
+      "ats": "greenhouse",
+      "slug": "navi"
+    },
+    {
+      "company": "Fampay",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "fampay"
+    },
+    {
+      "company": "Freo",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "freo"
+    },
+    {
+      "company": "Moxo",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "moxo"
+    },
+    {
+      "company": "Signzy",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "signzy"
+    },
+    {
+      "company": "Artoo",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "artoo"
+    },
+    {
+      "company": "Yubi",
+      "cid": "yubi",
+      "ats": "greenhouse",
+      "slug": "yubi"
+    },
+    {
+      "company": "Mintifi",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "mintifi"
+    },
+    {
+      "company": "Progcap",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "progcap"
+    },
+    {
+      "company": "Avail Finance",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "availfinance"
+    },
+    {
+      "company": "Eka Plus",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "ekaplus"
+    },
+    {
+      "company": "Vyapar",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "vyapar"
+    },
+    {
+      "company": "Zowork",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "zowork"
+    },
+    {
+      "company": "Numberz",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "numberz"
+    },
+    {
+      "company": "Ezetap",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "ezetap"
+    },
+    {
+      "company": "Kredx",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "kredx"
+    },
+    {
+      "company": "Happiest Minds",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "happiestminds"
+    },
+    {
+      "company": "Sigmoid",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "sigmoid"
+    },
+    {
+      "company": "DataWeave",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "dataweave"
+    },
+    {
+      "company": "Flutura",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "flutura"
+    },
+    {
+      "company": "Absolutdata",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "absolutdata"
+    },
+    {
+      "company": "Axtria",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "axtria"
+    },
+    {
+      "company": "Classplus",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "classplus"
+    },
+    {
+      "company": "Teachmint",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "teachmint"
+    },
+    {
+      "company": "Konversai",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "konversai"
+    },
+    {
+      "company": "iNeuron",
+      "cid": null,
+      "ats": "greenhouse",
+      "slug": "ineuron"
+    },
+    {
+      "company": "CRED",
+      "cid": "cred",
+      "ats": "lever",
+      "slug": "cred"
+    },
+    {
+      "company": "Groww",
+      "cid": "groww",
+      "ats": "lever",
+      "slug": "growwapp"
+    },
+    {
+      "company": "Zepto",
+      "cid": "zepto",
+      "ats": "lever",
+      "slug": "zepto"
+    },
+    {
+      "company": "Meesho",
+      "cid": "meesho",
+      "ats": "lever",
+      "slug": "meesho"
+    },
+    {
+      "company": "Ola Electric",
+      "cid": "olaelectric",
+      "ats": "lever",
+      "slug": "olaelectric"
+    },
+    {
+      "company": "MakeMyTrip",
+      "cid": null,
+      "ats": "lever",
+      "slug": "makemytrip"
+    },
+    {
+      "company": "Paytm Money",
+      "cid": null,
+      "ats": "lever",
+      "slug": "paytmmoney"
+    },
+    {
+      "company": "KreditBee",
+      "cid": null,
+      "ats": "lever",
+      "slug": "kreditbee"
+    },
+    {
+      "company": "MoneyTap",
+      "cid": null,
+      "ats": "lever",
+      "slug": "moneytap"
+    },
+    {
+      "company": "Kissht",
+      "cid": null,
+      "ats": "lever",
+      "slug": "kissht"
+    },
+    {
+      "company": "ZestMoney",
+      "cid": null,
+      "ats": "lever",
+      "slug": "zestmoney"
+    },
+    {
+      "company": "Fibe (EarlySalary)",
+      "cid": null,
+      "ats": "lever",
+      "slug": "earlysalary"
+    },
+    {
+      "company": "Mswipe",
+      "cid": null,
+      "ats": "lever",
+      "slug": "mswipe"
+    },
+    {
+      "company": "Zenoti",
+      "cid": "zenoti",
+      "ats": "lever",
+      "slug": "zenoti"
+    },
+    {
+      "company": "Icertis",
+      "cid": null,
+      "ats": "lever",
+      "slug": "icertis"
+    },
+    {
+      "company": "Vymo",
+      "cid": null,
+      "ats": "lever",
+      "slug": "vymo"
+    },
+    {
+      "company": "Mindtickle",
+      "cid": "mindtickle",
+      "ats": "lever",
+      "slug": "mindtickle"
+    },
+    {
+      "company": "Haptik",
+      "cid": "haptik",
+      "ats": "lever",
+      "slug": "haptik"
+    },
+    {
+      "company": "Exotel",
+      "cid": null,
+      "ats": "lever",
+      "slug": "exotel"
+    },
+    {
+      "company": "Eka Software",
+      "cid": null,
+      "ats": "lever",
+      "slug": "eka"
+    },
+    {
+      "company": "Urban Company",
+      "cid": "urbancompany",
+      "ats": "lever",
+      "slug": "urbanclap"
+    },
+    {
+      "company": "Zetwerk",
+      "cid": null,
+      "ats": "lever",
+      "slug": "zetwerk"
+    },
+    {
+      "company": "Ninjacart",
+      "cid": "ninjacart",
+      "ats": "lever",
+      "slug": "ninjacart"
+    },
+    {
+      "company": "Spinny",
+      "cid": null,
+      "ats": "lever",
+      "slug": "spinny"
+    },
+    {
+      "company": "Delhivery",
+      "cid": null,
+      "ats": "lever",
+      "slug": "delhivery"
+    },
+    {
+      "company": "BlackBuck",
+      "cid": null,
+      "ats": "lever",
+      "slug": "blackbuck"
+    },
+    {
+      "company": "Shiprocket",
+      "cid": null,
+      "ats": "lever",
+      "slug": "shiprocket"
+    },
+    {
+      "company": "Porter",
+      "cid": "porter",
+      "ats": "lever",
+      "slug": "porter"
+    },
+    {
+      "company": "Blowhorn",
+      "cid": null,
+      "ats": "lever",
+      "slug": "blowhorn"
+    },
+    {
+      "company": "PharmEasy",
+      "cid": null,
+      "ats": "lever",
+      "slug": "pharmeasy"
+    },
+    {
+      "company": "Pristyn Care",
+      "cid": null,
+      "ats": "lever",
+      "slug": "pristyncare"
+    },
+    {
+      "company": "Cure.fit",
+      "cid": null,
+      "ats": "lever",
+      "slug": "curefit"
+    },
+    {
+      "company": "Aster DM Healthcare",
+      "cid": null,
+      "ats": "lever",
+      "slug": "asterdm"
+    },
+    {
+      "company": "Licious",
+      "cid": "licious",
+      "ats": "lever",
+      "slug": "licious"
+    },
+    {
+      "company": "Country Delight",
+      "cid": null,
+      "ats": "lever",
+      "slug": "countrydelight"
+    },
+    {
+      "company": "Eat Club",
+      "cid": null,
+      "ats": "lever",
+      "slug": "eatclub"
+    },
+    {
+      "company": "NoBroker",
+      "cid": "nobroker",
+      "ats": "lever",
+      "slug": "nobroker"
+    },
+    {
+      "company": "Square Yards",
+      "cid": null,
+      "ats": "lever",
+      "slug": "squareyards"
+    },
+    {
+      "company": "Housing.com",
+      "cid": null,
+      "ats": "lever",
+      "slug": "housing"
+    },
+    {
+      "company": "ixigo",
+      "cid": null,
+      "ats": "lever",
+      "slug": "ixigo"
+    },
+    {
+      "company": "EaseMyTrip",
+      "cid": null,
+      "ats": "lever",
+      "slug": "easemytrip"
+    },
+    {
+      "company": "RateGain",
+      "cid": null,
+      "ats": "lever",
+      "slug": "rategain"
+    },
+    {
+      "company": "Springworks",
+      "cid": null,
+      "ats": "lever",
+      "slug": "springworks"
+    },
+    {
+      "company": "Keka",
+      "cid": "keka",
+      "ats": "lever",
+      "slug": "keka"
+    },
+    {
+      "company": "sumHR",
+      "cid": null,
+      "ats": "lever",
+      "slug": "sumhr"
+    },
+    {
+      "company": "Bizongo",
+      "cid": null,
+      "ats": "lever",
+      "slug": "bizongo"
+    },
+    {
+      "company": "Moglix",
+      "cid": "moglix",
+      "ats": "lever",
+      "slug": "moglix"
+    },
+    {
+      "company": "Ofbusiness",
+      "cid": null,
+      "ats": "lever",
+      "slug": "ofbusiness"
+    },
+    {
+      "company": "Yash Technologies",
+      "cid": null,
+      "ats": "lever",
+      "slug": "yash-technologies"
+    },
+    {
+      "company": "Niswey",
+      "cid": null,
+      "ats": "lever",
+      "slug": "niswey"
+    },
+    {
+      "company": "Styli (Landmark Group)",
+      "cid": null,
+      "ats": "lever",
+      "slug": "styli"
+    },
+    {
+      "company": "Fashinza",
+      "cid": null,
+      "ats": "lever",
+      "slug": "fashinza"
+    },
+    {
+      "company": "Zilingo India",
+      "cid": null,
+      "ats": "lever",
+      "slug": "zilingo"
+    },
+    {
+      "company": "Tata 1mg",
+      "cid": null,
+      "ats": "lever",
+      "slug": "tata1mg"
+    },
+    {
+      "company": "Apollo 24/7",
+      "cid": null,
+      "ats": "lever",
+      "slug": "apollo247"
+    },
+    {
+      "company": "Medikabazaar",
+      "cid": null,
+      "ats": "lever",
+      "slug": "medikabazaar"
+    },
+    {
+      "company": "Euler Motors",
+      "cid": null,
+      "ats": "lever",
+      "slug": "eulermotors"
+    },
+    {
+      "company": "Log9 Materials",
+      "cid": null,
+      "ats": "lever",
+      "slug": "log9materials"
+    },
+    {
+      "company": "Climes",
+      "cid": null,
+      "ats": "lever",
+      "slug": "climes"
+    },
+    {
+      "company": "Angel One",
+      "cid": null,
+      "ats": "lever",
+      "slug": "angelone"
+    },
+    {
+      "company": "IIFL Finance",
+      "cid": null,
+      "ats": "lever",
+      "slug": "iifl"
+    },
+    {
+      "company": "5Paisa Capital",
+      "cid": null,
+      "ats": "lever",
+      "slug": "5paisa"
+    },
+    {
+      "company": "Samco Securities",
+      "cid": null,
+      "ats": "lever",
+      "slug": "samco"
+    },
+    {
+      "company": "Edelweiss Financial Services",
+      "cid": null,
+      "ats": "lever",
+      "slug": "edelweiss"
+    },
+    {
+      "company": "RenewBuy",
+      "cid": null,
+      "ats": "lever",
+      "slug": "renewbuy"
+    },
+    {
+      "company": "Coverfox",
+      "cid": null,
+      "ats": "lever",
+      "slug": "coverfox"
+    },
+    {
+      "company": "PhillipCapital India",
+      "cid": null,
+      "ats": "lever",
+      "slug": "phillipcapital"
+    },
+    {
+      "company": "Sarvam AI",
+      "cid": "sarvamai",
+      "ats": "ashby",
+      "slug": "sarvam"
+    },
+    {
+      "company": "Krutrim",
+      "cid": "krutrim",
+      "ats": "ashby",
+      "slug": "krutrim"
+    },
+    {
+      "company": "Yellow.ai",
+      "cid": "yellowai",
+      "ats": "ashby",
+      "slug": "yellowai"
+    },
+    {
+      "company": "Gnani AI",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "gnani"
+    },
+    {
+      "company": "Mihup",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "mihup"
+    },
+    {
+      "company": "Observe.AI",
+      "cid": "observeai",
+      "ats": "ashby",
+      "slug": "observeai"
+    },
+    {
+      "company": "Avaamo",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "avaamo"
+    },
+    {
+      "company": "Ola",
+      "cid": "ola",
+      "ats": "ashby",
+      "slug": "olacabs"
+    },
+    {
+      "company": "Yulu",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "yulu"
+    },
+    {
+      "company": "Bounce",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "bounce"
+    },
+    {
+      "company": "Slice",
+      "cid": "slice",
+      "ats": "ashby",
+      "slug": "sliceit"
+    },
+    {
+      "company": "Jar",
+      "cid": "jar",
+      "ats": "ashby",
+      "slug": "jar-app"
+    },
+    {
+      "company": "Fi Money",
+      "cid": "fimoney",
+      "ats": "ashby",
+      "slug": "epifi"
+    },
+    {
+      "company": "Smallcase",
+      "cid": "smallcase",
+      "ats": "ashby",
+      "slug": "smallcase"
+    },
+    {
+      "company": "INDmoney",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "indmoney"
+    },
+    {
+      "company": "Fisdom",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "fisdom"
+    },
+    {
+      "company": "Rupeek",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "rupeek"
+    },
+    {
+      "company": "Kredivo",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "kredivo"
+    },
+    {
+      "company": "Stashfin",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "stashfin"
+    },
+    {
+      "company": "Leegality",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "leegality"
+    },
+    {
+      "company": "Paperflite",
+      "cid": "paperflite",
+      "ats": "ashby",
+      "slug": "paperflite"
+    },
+    {
+      "company": "Zeta",
+      "cid": "zeta",
+      "ats": "ashby",
+      "slug": "zeta"
+    },
+    {
+      "company": "Sprinto",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "sprinto"
+    },
+    {
+      "company": "Facilio",
+      "cid": "facilio",
+      "ats": "ashby",
+      "slug": "facilio"
+    },
+    {
+      "company": "Toplyne",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "toplyne"
+    },
+    {
+      "company": "Suprsend",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "suprsend"
+    },
+    {
+      "company": "Recykal",
+      "cid": "recykal",
+      "ats": "ashby",
+      "slug": "recykal"
+    },
+    {
+      "company": "Zomato",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "zomato"
+    },
+    {
+      "company": "Blinkit",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "blinkit"
+    },
+    {
+      "company": "Pepper Cloud",
+      "cid": "peppercloud",
+      "ats": "ashby",
+      "slug": "peppercontent"
+    },
+    {
+      "company": "Eruditus",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "eruditus"
+    },
+    {
+      "company": "Cuemath",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "cuemath"
+    },
+    {
+      "company": "Credgenics",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "credgenics"
+    },
+    {
+      "company": "Karza Technologies",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "karza"
+    },
+    {
+      "company": "Pixxel",
+      "cid": "pixxel",
+      "ats": "ashby",
+      "slug": "pixxel"
+    },
+    {
+      "company": "Agnikul Cosmos",
+      "cid": "agnikulcosmos",
+      "ats": "ashby",
+      "slug": "agnikul"
+    },
+    {
+      "company": "Skyroot Aerospace",
+      "cid": "skyrootaerospace",
+      "ats": "ashby",
+      "slug": "skyroot"
+    },
+    {
+      "company": "Unacademy",
+      "cid": "unacademy",
+      "ats": "ashby",
+      "slug": "graphy"
+    },
+    {
+      "company": "Classmate (ITC)",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "itc-classmate"
+    },
+    {
+      "company": "Ather Energy",
+      "cid": "atherenergy",
+      "ats": "ashby",
+      "slug": "atherenergy"
+    },
+    {
+      "company": "Greenpanel",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "greenpanel"
+    },
+    {
+      "company": "DeHaat",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "dehaat"
+    },
+    {
+      "company": "WayCool",
+      "cid": "waycool",
+      "ats": "ashby",
+      "slug": "waycool"
+    },
+    {
+      "company": "Bijak",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "bijak"
+    },
+    {
+      "company": "Acko",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "acko"
+    },
+    {
+      "company": "Digit Insurance",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "digit"
+    },
+    {
+      "company": "Turtlemint",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "turtlemint"
+    },
+    {
+      "company": "Slintel (6sense India)",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "slintel"
+    },
+    {
+      "company": "DealShare",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "dealshare"
+    },
+    {
+      "company": "GlobalBees",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "globalbees"
+    },
+    {
+      "company": "Mensa Brands",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "mensabrands"
+    },
+    {
+      "company": "Khatabook",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "khatabook"
+    },
+    {
+      "company": "OkCredit",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "okcredit"
+    },
+    {
+      "company": "BetterPlace",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "betterplace"
+    },
+    {
+      "company": "Apna",
+      "cid": "apna",
+      "ats": "ashby",
+      "slug": "apna-com"
+    },
+    {
+      "company": "Vokal",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "vokal"
+    },
+    {
+      "company": "Kutumb",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "kutumb"
+    },
+    {
+      "company": "ShareChat",
+      "cid": "sharechat",
+      "ats": "ashby",
+      "slug": "sharechat"
+    },
+    {
+      "company": "Moj (ShareChat)",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "moj"
+    },
+    {
+      "company": "Josh (DailyHunt)",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "josh"
+    },
+    {
+      "company": "Verse Innovation (DailyHunt)",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "verseinnovation"
+    },
+    {
+      "company": "Pocket FM",
+      "cid": "pocketfm",
+      "ats": "ashby",
+      "slug": "pocketfm"
+    },
+    {
+      "company": "Pratilipi",
+      "cid": "pratilipi",
+      "ats": "ashby",
+      "slug": "pratilipi"
+    },
+    {
+      "company": "OneCode",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "onecode"
+    },
+    {
+      "company": "Nira Finance",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "nira-finance"
+    },
+    {
+      "company": "Cars24",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "cars24"
+    },
+    {
+      "company": "OYO Rooms",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "oyorooms"
+    },
+    {
+      "company": "Upstox",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "upstox"
+    },
+    {
+      "company": "Mobikwik",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "mobikwik"
+    },
+    {
+      "company": "Capillary Technologies",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "capillary"
+    },
+    {
+      "company": "Kaleyra",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "kaleyra"
+    },
+    {
+      "company": "CloudSEK",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "cloudsek"
+    },
+    {
+      "company": "Airmeet",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "airmeet"
+    },
+    {
+      "company": "Droom",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "droom"
+    },
+    {
+      "company": "Tata Digital",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "tatadigital"
+    },
+    {
+      "company": "Physics Wallah",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "physicswallah"
+    },
+    {
+      "company": "Udaan",
+      "cid": "udaan",
+      "ats": "ashby",
+      "slug": "udaan"
+    },
+    {
+      "company": "FirstCry",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "firstcry"
+    },
+    {
+      "company": "Wakefit",
+      "cid": "wakefit",
+      "ats": "ashby",
+      "slug": "wakefit"
+    },
+    {
+      "company": "Pepperfry",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "pepperfry"
+    },
+    {
+      "company": "boAt (Imagine Marketing)",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "imaginemarketingltd"
+    },
+    {
+      "company": "Sugar Cosmetics",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "sugarcosmetics"
+    },
+    {
+      "company": "MediBuddy",
+      "cid": "medibuddy",
+      "ats": "ashby",
+      "slug": "medibuddy"
+    },
+    {
+      "company": "Innoviti",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "innoviti"
+    },
+    {
+      "company": "Stanza Living",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "stanzaliving"
+    },
+    {
+      "company": "Awfis",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "awfis"
+    },
+    {
+      "company": "Magicpin",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "magicpin"
+    },
+    {
+      "company": "Quantiphi",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "quantiphi"
+    },
+    {
+      "company": "Crayon Data",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "crayondata"
+    },
+    {
+      "company": "Gramener",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "gramener"
+    },
+    {
+      "company": "Analytics Quotient",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "analyticsquotient"
+    },
+    {
+      "company": "Evalueserve",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "evalueserve"
+    },
+    {
+      "company": "ZS Associates India",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "zs-associates"
+    },
+    {
+      "company": "EXL Service",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "exlservice"
+    },
+    {
+      "company": "WNS Global Services",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "wns"
+    },
+    {
+      "company": "BRIDGEi2i Analytics",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "bridgei2i"
+    },
+    {
+      "company": "Manthan",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "manthan"
+    },
+    {
+      "company": "MathCo (The Math Company)",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "themathcompany"
+    },
+    {
+      "company": "Subex",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "subex"
+    },
+    {
+      "company": "Nucleus Software",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "nucleussoftware"
+    },
+    {
+      "company": "Intellect Design Arena",
+      "cid": "intellectdesignarena",
+      "ats": "ashby",
+      "slug": "intellectdesign"
+    },
+    {
+      "company": "Finarkein Analytics",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "finarkein"
+    },
+    {
+      "company": "Sahamati",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "sahamati"
+    },
+    {
+      "company": "Artivatic Data Labs",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "artivatic"
+    },
+    {
+      "company": "Lendingkart",
+      "cid": null,
+      "ats": "ashby",
+      "slug": "lendingkart"
+    },
+    {
+      "company": "Groww",
+      "cid": "groww",
+      "ats": "greenhouse",
+      "slug": "groww"
+    },
+    {
+      "company": "Atlan",
+      "cid": "atlan",
+      "ats": "ashby",
+      "slug": "atlan"
+    },
+    {
+      "company": "Slice",
+      "cid": "slice",
+      "ats": "greenhouse",
+      "slug": "slice"
+    }
+  ]
+}
