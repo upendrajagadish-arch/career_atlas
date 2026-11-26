@@ -2,7 +2,7 @@
 /* Live fresher openings & hiring events. Reads data/jobs.json, which scripts/update-jobs.js rewrites every day. */
 const JOBS_URL = 'data/jobs.json';
 const J = { data: null, byCo: new Map(), evByCo: new Map(), byRole: new Map(), byTrack: new Map(), byKey: new Map(),
-  tab: 'jobs', limit: 60, f: { q: '', city: '', track: '', level: '', posted: '', fresh: false, cid: '', role: '', seg: '', batch: '' }, ef: { q: '', type: '', linked: false, batch: '' }, sq: '', scity: '' };
+  tab: 'jobs', limit: 60, f: { q: '', city: '', track: '', level: '', posted: '', fresh: false, cid: '', role: '', seg: '', batch: '' }, ef: { q: '', type: '', linked: false, batch: '' }, cf: { q: '', seg: 'startup' }, sq: '', scity: '' };
 const SEGMENTS = [
   ['startup', 'Startups'],
   ['mid', 'Mid-size'],
@@ -246,9 +246,29 @@ function liveRootHTML() {
 function openJobs(f = {}) {
   if (f.tab) J.tab = f.tab; else J.tab = 'jobs';
   J.f = { q: '', city: '', track: '', level: '', posted: '', fresh: false, cid: '', role: '', seg: '', batch: '', ...f }; delete J.f.tab;
+  if (f.seg) J.cf.seg = f.seg;
   J.limit = 60;
   S.jobs = true; jobsEl.hidden = false;
   renderJobs();
+}
+function companiesInSeg(seg) {
+  const all = S.data?.companies || [];
+  if (!seg) return all.slice().sort((a, b) => a.name.localeCompare(b.name));
+  return all.filter(c => companySegment(c) === seg).sort((a, b) => a.name.localeCompare(b.name));
+}
+function companyCard(c) {
+  const jobs = J.byCo.get(c.id) || [];
+  const cov = J.data?.coverage?.[c.id];
+  const seg = companySegment(c);
+  const tracked = !!cov?.boards?.length;
+  return `<article class="co-card">
+    <div class="jb-tags"><span class="jb-tag seg-${esc(seg)}">${esc(SEG_LABEL[seg] || 'Company')}</span>${tracked ? '<span class="jb-tag">Board tracked</span>' : '<span class="jb-tag">Search links</span>'}${jobs.length ? `<span class="jb-tag new">${jobs.length} live</span>` : ''}</div>
+    <h4>${companyKeys(c) ? `<button class="link-btn" data-j="map:${esc(JSON.stringify(companyKeys(c)))}">${esc(c.name)}</button>` : esc(c.name)}</h4>
+    <div class="jb-co">${esc((c.cities || []).slice(0, 3).join(' · ') || 'India')} · ${esc((c.categories || [])[0] || '')}</div>
+    ${jobs.length ? miniJobs(jobs, 3) : `<p class="muted">No fresher/intern opening on a public board today — search LinkedIn / Naukri below.</p>`}
+    <div class="jb-act">${jobs.length ? `<button class="chip-btn primary" data-j="co:${esc(c.id)}">See ${jobs.length} opening${jobs.length > 1 ? 's' : ''}</button>` : ''}<button class="chip-btn" data-j="map:${esc(JSON.stringify(companyKeys(c) || ['root']))}">On map</button></div>
+    ${siteLinkHTML(c.name + ' fresher', (c.cities || [])[0] || '')}
+  </article>`;
 }
 function closeJobs() { S.jobs = false; jobsEl.hidden = true; jobsCard.innerHTML = ''; }
 function filteredJobs() {
@@ -320,7 +340,8 @@ function jobsTab() {
     ${chips.length ? `<div class="jf-chips">${chips.map(([t, k]) => `<span class="tag">${esc(t)} <button class="b-x" data-j="clear:${k}" title="Remove filter">×</button></span>`).join('')}</div>` : ''}
     <p class="jf-count">Showing <b>${Math.min(list.length, J.limit)}</b> of <b>${list.length}</b> matching openings${list.length !== all.length ? ` (${all.length} in total)` : ''}${f.seg ? ` · ${SEG_LABEL[f.seg]}` : ''}${f.batch ? ` · batch ${f.batch === '20267' ? '2026 & 2027' : f.batch}` : ''}</p>
     ${list.length ? `<div class="jb-grid">${list.slice(0, J.limit).map(jobCard).join('')}</div>${list.length > J.limit ? `<div class="jf-more"><button class="chip-btn" data-j="more">Show ${Math.min(60, list.length - J.limit)} more</button></div>` : ''}`
-      : `<div class="b-empty-state">No openings match these filters. Try another company type, batch year, city or role track — or use the “Search all job sites” tab.</div>`}`;
+      : `<div class="b-empty-state">No live fresher openings match these filters right now.${f.seg === 'startup' ? ' Many startups hide careers behind login — open the <b>Companies</b> tab to see every startup with one-click job-site searches.' : ' Try another company type, batch year, city or role track — or use the “Search all job sites” / Companies tabs.'}</div>`}
+    ${f.seg === 'startup' ? `<div class="jf-more" style="margin-top:14px"><button class="chip-btn primary" data-j="tab:companies">Browse all ${companiesInSeg('startup').length} startups →</button></div>` : ''}`;
 }
 function eventsTab() {
   const all = J.data.events, list = filteredEvents(), f = J.ef;
@@ -345,6 +366,24 @@ function eventsTab() {
     }).join('')}</div>${list.length > 300 ? `<p class="muted">Showing the newest 300 — narrow the search to see others.</p>` : ''}
     ${note('Headlines come from Google News. Dates, eligibility and registration links are on each source page — always confirm on the company’s own careers site.', true)}`;
 }
+function companiesTab() {
+  const f = J.cf;
+  const segCounts = new Map();
+  (S.data?.companies || []).forEach(c => { const s = companySegment(c); segCounts.set(s, (segCounts.get(s) || 0) + 1); });
+  const q = f.q.trim().toLowerCase();
+  let list = companiesInSeg(f.seg || '');
+  if (q) list = list.filter(c => `${c.name} ${(c.cities || []).join(' ')} ${(c.categories || []).join(' ')}`.toLowerCase().includes(q));
+  const withLive = list.filter(c => (J.byCo.get(c.id) || []).length).length;
+  return `${note(`Only companies with a <b>public</b> Greenhouse / Lever / Ashby / Workday (etc.) board can be scraped automatically — today that is <b>${J.data.totals.trackedCompanies}</b> of <b>${S.data.companies.length}</b> in the map. Every other company still appears here with LinkedIn / Naukri / Indeed / Google Jobs search links.`, true)}
+    <div class="jf-seg" role="group" aria-label="Company type">
+      <span class="jf-seg-label">Show</span>
+      <button type="button" class="b-chip${f.seg ? '' : ' on'}" data-j="cseg:">All (${S.data.companies.length})</button>
+      ${SEGMENTS.map(([id, label]) => `<button type="button" class="b-chip${f.seg === id ? ' on' : ''}" data-j="cseg:${id}">${esc(label)} (${segCounts.get(id) || 0})</button>`).join('')}
+    </div>
+    <div class="jf"><input id="cQ" class="b-input" type="search" placeholder="Search company name or city…" value="${esc(f.q)}"></div>
+    <p class="jf-count"><b>${list.length}</b> companies${f.seg ? ` · ${SEG_LABEL[f.seg]}` : ''} · <b>${withLive}</b> with live fresher openings today</p>
+    <div class="jb-grid">${list.map(companyCard).join('')}</div>`;
+}
 function searchTab() {
   return `<p>Most Indian job sites (LinkedIn, Naukri, Indeed, Foundit) do not allow automatic collection, so each link below opens that site’s own search with <b>fresher / entry-level</b> filters and, where the site supports it, <b>only the last 24 hours</b>.</p>
     <div class="jf"><input id="sQ" class="b-input" type="search" placeholder="Any role, skill or company — e.g. ServiceNow developer, Salesforce PD1" value="${esc(J.sq)}">
@@ -357,21 +396,23 @@ function sourcesTab() {
   const bySrc = new Map(); cov.forEach(([, v]) => uniq(v.boards.map(b => b.label)).forEach(l => bySrc.set(l, (bySrc.get(l) || 0) + 1)));
   const untracked = S.data.companies.filter(c => !d.coverage[c.id]?.boards?.length);
   const how = d.trigger ? TRIGGER_LABEL[d.trigger] || d.trigger : 'scan';
+  const startups = companiesInSeg('startup');
   return facts([['Last scanned', `${scanStamp(d)} (${agoTxt(d.date)}) · ${how}`], ['Run time', `${d.durationSec} s · ${t.requests} requests`],
-      ['Companies tracked daily', `${t.trackedCompanies} of ${S.data.companies.length}`], ['Companies with openings today', `${t.companiesWithJobs}`], ['Fresher / intern openings', `${t.jobs}${d.firstRun ? '' : ` (${t.newToday} new today)`}`],
+      ['In the company map', `${S.data.companies.length} (including ${startups.length} startups)`],
+      ['Readable job boards today', `${t.trackedCompanies} — only these expose a public Greenhouse/Lever/Ashby/Workday feed we can scrape`],
+      ['Companies with fresher openings today', `${t.companiesWithJobs}`], ['Fresher / intern openings', `${t.jobs}${d.firstRun ? '' : ` (${t.newToday} new today)`}`],
       ['Drives, internships & hackathons', `${t.events} (last 30 days)`], ['Job aggregators', d.sources.aggregators.length ? esc(d.sources.aggregators.join(', ')) : 'None — add free Adzuna / Jooble API keys as GitHub Actions secrets to include them']])
+    + note(`<b>Why not all ${S.data.companies.length}?</b> Most startups and many GCCs use private careers sites (login, Cloudflare, or no public API). We still list every company under the <b>Companies</b> tab with LinkedIn/Naukri/Indeed/Google Jobs searches. The daily scan keeps probing for new public boards.`, true)
     + (latestScanFailed() ? note(`Latest scan failed at ${scanStamp(J.status)}. ${esc(J.status.error || 'The previous feed was kept.')}`, true) : '')
-    + `<h3>How it stays up to date</h3>${ul(['The GitHub Action “Daily job scan” runs twice a day (≈08:00 and 15:30 IST), scans company career boards + India IT fresher portals, searches Google News for 2026/2027 drives, writes data/jobs.json, and pushes automatically. Vercel redeploys from that push — reload the page to see the new feed.',
-      'Filter openings by company type (Startups, Mid-size, IT services, MNCs, GCCs) and by 2026 / 2027 batch on the Openings tab.',
-      'To run it by hand, open the repository on GitHub → Actions → Daily job scan → Run workflow.',
-      'Openings come from official ATS boards (Greenhouse, Lever, Ashby, Workday, …), curated India IT fresher portals (TCS NQT, Infosys, Wipro GET, Cognizant GenC, …), free public job boards, and Google News drive headlines.',
-      'Only India-based internships and fresher / graduate-trainee roles open to 0 years of experience are kept.',
-      'scripts/schedule-daily.ps1 can still refresh a copy on a Windows PC. That local run does not update this website.'])}`
+    + `<h3>How it stays up to date</h3>${ul(['The GitHub Action “Daily job scan” runs twice a day (≈08:00 and 15:30 IST), scans public career boards + India IT fresher portals, searches Google News for 2026/2027 drives, writes data/jobs.json, and pushes automatically.',
+      'Open the <b>Companies</b> tab to browse all startups / mid-size / IT / MNC / GCC companies — not only those with a scrapeable board.',
+      'Filter live openings by company type and 2026 / 2027 batch on the Openings tab.',
+      'Only India-based internships and fresher / graduate-trainee roles open to 0 years of experience are kept from boards we can read.'])}`
     + `<h3>Sources in use</h3><div class="chips">${[...bySrc].sort((a, b) => b[1] - a[1]).map(([l, n]) => `<span class="tag">${esc(l)} · ${n}</span>`).join('')}<span class="tag">Google News · events</span><span class="tag">India IT fresher portals</span></div>`
-    + `<h3>Companies tracked daily <span class="muted">${cov.length}</span></h3><div class="cov">${cov.sort((a, b) => b[1].jobs - a[1].jobs).map(([id, v]) => {
+    + `<h3>Boards scraped today <span class="muted">${cov.length}</span></h3><div class="cov">${cov.sort((a, b) => b[1].jobs - a[1].jobs).map(([id, v]) => {
       const c = coOf(id); return `<div class="cov-r"><button class="link-btn" data-j="co:${esc(id)}">${esc(c?.name || id)}</button><span>${v.jobs ? `<b>${v.jobs}</b> open` : '<span class="muted">0 open</span>'}${c ? ` · <small class="muted">${esc(SEG_LABEL[companySegment(c)] || '')}</small>` : ''}</span>${v.boards[0]?.url ? `<a href="${esc(v.boards[0].url)}" target="_blank" rel="noopener">${esc(v.boards[0].label)} ↗</a>` : `<small>${esc(v.boards[0]?.label || '')}</small>`}</div>`;
     }).join('')}</div>`
-    + `<h3>Custom careers sites <span class="muted">${untracked.length}</span></h3><p class="muted">Some companies still use custom careers pages. Major India IT fresher portals (TCS, Infosys, Wipro, Cognizant, …) are listed via the portal scraper; others show under Events and in each company panel’s job-site searches.</p>`
+    + `<h3>No public board yet <span class="muted">${untracked.length}</span></h3><p class="muted">These ${untracked.length} companies (many startups) are still in the map and on the Companies tab. Open that tab → Startups to search each one on LinkedIn/Naukri. Major IT fresher portals (TCS, Infosys, Wipro, Cognizant, …) are covered by the portal scraper.</p>`
     + (d.errors.length ? `<details class="cov-err"><summary>${plural(d.errors.length, 'source')} failed in the last run</summary>${ul(d.errors)}</details>` : '');
 }
 function renderJobs(keepScroll) {
@@ -382,12 +423,13 @@ function renderJobs(keepScroll) {
     return;
   }
   const d = J.data, t = d.totals;
-  const tabs = [['jobs', `Openings (${t.jobs})`], ['events', `Drives, internships & hackathons (${t.events})`], ['search', 'Search all job sites'], ['sources', 'Sources & daily update']];
+  const startupN = companiesInSeg('startup').length;
+  const tabs = [['jobs', `Openings (${t.jobs})`], ['companies', `Companies (${S.data.companies.length})`], ['events', `Drives & hackathons (${t.events})`], ['search', 'Search all job sites'], ['sources', 'Sources & daily update']];
   jobsCard.innerHTML = `<header class="m-head"><div class="m-headl"><span class="pill k-job">Live job feed · ${esc(dayLabel(d.date))}</span><h2 id="jTitle">Fresher &amp; graduate openings in India</h2>
-      <p>${t.jobs} openings at ${t.companiesWithJobs} companies${d.firstRun ? '' : ` · <b>${t.newToday} new today</b>`} · ${t.events} drives, internships &amp; hackathons · last scanned ${esc(scanStamp(d))}</p></div>
+      <p>${t.jobs} openings · ${t.companiesWithJobs} companies with live roles · ${startupN} startups in map · ${t.trackedCompanies} boards scraped · last scanned ${esc(scanStamp(d))}</p></div>
       <div class="m-actions"><button class="chip-btn primary" data-j="xlsx"><svg class="ico" viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download Excel</button><button class="m-close" data-j="close" aria-label="Close">✕</button></div></header>
     <nav class="m-tabs">${tabs.map(([k, l]) => `<button class="m-tab${J.tab === k ? ' on' : ''}" data-j="tab:${k}">${esc(l)}</button>`).join('')}</nav>
-    <div class="m-body">${staleNote()}${{ jobs: jobsTab, events: eventsTab, search: searchTab, sources: sourcesTab }[J.tab]()}</div>`;
+    <div class="m-body">${staleNote()}${{ jobs: jobsTab, companies: companiesTab, events: eventsTab, search: searchTab, sources: sourcesTab }[J.tab]()}</div>`;
   jobsCard.querySelector('.m-body').scrollTop = top;
 }
 function jobsWorkbook() {
@@ -419,7 +461,8 @@ jobsEl.addEventListener('click', e => {
     case 'tab': J.tab = arg; renderJobs(); return;
     case 'more': J.limit += 60; renderJobs(true); return;
     case 'co': J.f.cid = arg; J.tab = 'jobs'; J.limit = 60; renderJobs(); return;
-    case 'seg': J.f.seg = arg; J.tab = 'jobs'; J.limit = 60; renderJobs(true); return;
+    case 'seg': J.f.seg = arg; if (arg) J.cf.seg = arg; J.tab = 'jobs'; J.limit = 60; renderJobs(true); return;
+    case 'cseg': J.cf.seg = arg; J.tab = 'companies'; renderJobs(true); return;
     case 'batch': J.f.batch = arg; J.tab = 'jobs'; J.limit = 60; renderJobs(true); return;
     case 'ebatch': J.ef.batch = arg; J.tab = 'events'; renderJobs(true); return;
     case 'clear': J.f[arg] = ''; renderJobs(true); return;
@@ -432,10 +475,10 @@ jobsEl.addEventListener('click', e => {
 let jobsTimer = null;
 jobsEl.addEventListener('input', e => {
   const id = e.target.id;
-  if (!['jQ', 'eQ', 'sQ'].includes(id)) return;
+  if (!['jQ', 'eQ', 'sQ', 'cQ'].includes(id)) return;
   clearTimeout(jobsTimer);
   jobsTimer = setTimeout(() => {
-    if (id === 'jQ') { J.f.q = e.target.value; J.limit = 60; } else if (id === 'eQ') J.ef.q = e.target.value; else J.sq = e.target.value;
+    if (id === 'jQ') { J.f.q = e.target.value; J.limit = 60; } else if (id === 'eQ') J.ef.q = e.target.value; else if (id === 'cQ') J.cf.q = e.target.value; else J.sq = e.target.value;
     renderJobs(true);
     const el = jobsCard.querySelector('#' + id); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
   }, 220);

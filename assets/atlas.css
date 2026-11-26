@@ -371,6 +371,9 @@ b.new{color:#e8590c;font-weight:700}
 .jb-tag.seg-mnc{background:#f4f3ff;color:#5925dc;border-color:#d9d6fe}
 .jb-tag.seg-gcc{background:#fdf2fa;color:#c11574;border-color:#fcceee}
 .jb-tag.batch{background:#f8fafc;color:#334155;border-color:#cbd5e1}
+.co-card{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.co-card h4{margin:0;font-size:15px;line-height:1.3}
+.co-card .links{margin-top:2px}
 .jf-check{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap;padding:0 6px}
 .jf-check input{accent-color:var(--accent);width:16px;height:16px}
 .jf-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
