@@ -2,7 +2,36 @@
 /* Live fresher openings & hiring events. Reads data/jobs.json, which scripts/update-jobs.js rewrites every day. */
 const JOBS_URL = 'data/jobs.json';
 const J = { data: null, byCo: new Map(), evByCo: new Map(), byRole: new Map(), byTrack: new Map(), byKey: new Map(),
-  tab: 'jobs', limit: 60, f: { q: '', city: '', track: '', level: '', posted: '', fresh: false, cid: '', role: '' }, ef: { q: '', type: '', linked: false }, sq: '', scity: '' };
+  tab: 'jobs', limit: 60, f: { q: '', city: '', track: '', level: '', posted: '', fresh: false, cid: '', role: '', seg: '', batch: '' }, ef: { q: '', type: '', linked: false, batch: '' }, sq: '', scity: '' };
+const SEGMENTS = [
+  ['startup', 'Startups'],
+  ['mid', 'Mid-size'],
+  ['it', 'IT services'],
+  ['mnc', 'MNCs'],
+  ['gcc', 'GCCs'],
+];
+const SEG_LABEL = Object.fromEntries(SEGMENTS);
+function companySegment(c) {
+  const cats = c?.categories || [];
+  if (cats.some(x => /Startup\s*\/\s*Product/i.test(x))) return 'startup';
+  if (cats.some(x => /\bGCC\b/i.test(x))) return 'gcc';
+  if (cats.some(x => /IT Services/i.test(x))) return 'it';
+  if (cats.some(x => /Agency|Product\s*\/\s*SaaS/i.test(x))) return 'mid';
+  if (cats.some(x => /^MNC/i.test(x))) return 'mnc';
+  return 'mid';
+}
+function jobSeg(j) {
+  if (j.seg && SEG_LABEL[j.seg]) return j.seg;
+  return companySegment(coOf(j.cid));
+}
+function jobBatch(j) {
+  if (Array.isArray(j.batch) && j.batch.length) return j.batch.map(Number);
+  const t = `${j.title || ''} ${j.why || ''} ${j.loc || ''}`;
+  const out = [];
+  if (/\b2026\b/.test(t)) out.push(2026);
+  if (/\b2027\b/.test(t)) out.push(2027);
+  return out;
+}
 const jobsEl = $('#jobsModal'), jobsCard = jobsEl.firstElementChild;
 const JOB_CITIES = ['Bengaluru', 'Hyderabad', 'Chennai', 'Pune', 'Mumbai', 'Delhi NCR', 'Kolkata', 'Kerala', 'Coimbatore', 'Ahmedabad', 'Other India'];
 const SEARCH_ROLES = [
@@ -216,7 +245,7 @@ function liveRootHTML() {
 /* ------------------------------------------------------------------ job-feed popup */
 function openJobs(f = {}) {
   if (f.tab) J.tab = f.tab; else J.tab = 'jobs';
-  J.f = { q: '', city: '', track: '', level: '', posted: '', fresh: false, cid: '', role: '', ...f }; delete J.f.tab;
+  J.f = { q: '', city: '', track: '', level: '', posted: '', fresh: false, cid: '', role: '', seg: '', batch: '', ...f }; delete J.f.tab;
   J.limit = 60;
   S.jobs = true; jobsEl.hidden = false;
   renderJobs();
@@ -224,18 +253,37 @@ function openJobs(f = {}) {
 function closeJobs() { S.jobs = false; jobsEl.hidden = true; jobsCard.innerHTML = ''; }
 function filteredJobs() {
   const f = J.f, q = f.q.trim().toLowerCase();
+  const batch = f.batch ? +f.batch : 0;
   return J.data.jobs.filter(j => (!f.city || j.city === f.city) && (!f.track || j.track === f.track) && (!f.level || j.level === f.level) && (!f.cid || j.cid === f.cid)
     && (!f.role || j.roles.includes(f.role)) && (!f.fresh || isNewJob(j)) && (!f.posted || (j.posted && dayDiff(j.posted) <= +f.posted))
-    && (!q || `${j.title} ${j.company} ${j.loc} ${j.track}`.toLowerCase().includes(q)));
+    && (!f.seg || jobSeg(j) === f.seg)
+    && (!batch || jobBatch(j).includes(batch) || (batch === 20267 && jobBatch(j).some(y => y === 2026 || y === 2027)))
+    && (!q || `${j.title} ${j.company} ${j.loc} ${j.track} ${SEG_LABEL[jobSeg(j)] || ''}`.toLowerCase().includes(q)));
 }
 function filteredEvents() {
   const f = J.ef, q = f.q.trim().toLowerCase();
-  return J.data.events.filter(e => (!f.type || e.type === f.type) && (!f.linked || e.cids.length) && (!q || `${e.title} ${e.source}`.toLowerCase().includes(q)));
+  const batch = f.batch ? +f.batch : 0;
+  return J.data.events.filter(e => {
+    if (f.type && e.type !== f.type) return false;
+    if (f.linked && !e.cids.length) return false;
+    if (batch) {
+      const years = (e.batch && e.batch.length) ? e.batch.map(Number) : batchYearsFromText(e.title);
+      const hit = batch === 20267 ? years.some(y => y === 2026 || y === 2027) : years.includes(batch);
+      if (!hit) return false;
+    }
+    return !q || `${e.title} ${e.source}`.toLowerCase().includes(q);
+  });
+}
+function batchYearsFromText(t) {
+  const out = [];
+  if (/\b2026\b/.test(t || '')) out.push(2026);
+  if (/\b2027\b/.test(t || '')) out.push(2027);
+  return out;
 }
 const opt = (v, label, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(label)}</option>`;
 function jobCard(j) {
-  const c = coOf(j.cid), roles = j.roles.filter(r => S.ROLE[r]);
-  return `<article class="jb"><div class="jb-tags"><span class="jb-tag lvl${j.level === 'Internship' ? ' intern' : ''}">${esc(j.level)}</span><span class="jb-tag">${esc(j.track)}</span>${isNewJob(j) ? '<span class="jb-tag new">New today</span>' : ''}</div>
+  const c = coOf(j.cid), roles = j.roles.filter(r => S.ROLE[r]), seg = jobSeg(j), batch = jobBatch(j);
+  return `<article class="jb"><div class="jb-tags"><span class="jb-tag lvl${j.level === 'Internship' ? ' intern' : ''}">${esc(j.level)}</span><span class="jb-tag seg-${esc(seg)}">${esc(SEG_LABEL[seg] || 'Company')}</span><span class="jb-tag">${esc(j.track)}</span>${batch.map(y => `<span class="jb-tag batch">${y} batch</span>`).join('')}${isNewJob(j) ? '<span class="jb-tag new">New today</span>' : ''}</div>
     <h4><a href="${esc(j.url)}" target="_blank" rel="noopener">${esc(j.title)}</a></h4>
     <div class="jb-co">${j.cid ? `<button class="link-btn" data-j="co:${esc(j.cid)}" title="Show only ${esc(j.company)}">${esc(j.company)}</button>` : `<b>${esc(j.company)}</b>`} · ${esc(j.loc)}</div>
     <div class="jb-meta">Posted ${esc(agoTxt(j.posted))} · via ${esc(j.source)}</div>
@@ -246,8 +294,22 @@ function jobsTab() {
   const all = J.data.jobs, list = filteredJobs(), f = J.f;
   const count = key => { const m = new Map(); all.forEach(j => m.set(j[key], (m.get(j[key]) || 0) + 1)); return m; };
   const tracks = [...count('track')].sort((a, b) => b[1] - a[1]), cities = count('city');
+  const segCounts = new Map(); all.forEach(j => { const s = jobSeg(j); segCounts.set(s, (segCounts.get(s) || 0) + 1); });
+  const batchCounts = { 2026: 0, 2027: 0 }; all.forEach(j => { const b = jobBatch(j); if (b.includes(2026)) batchCounts[2026]++; if (b.includes(2027)) batchCounts[2027]++; });
   const chips = [f.cid && [`Company: ${coOf(f.cid)?.name || f.cid}`, 'cid'], f.role && [`Role: ${S.ROLE[f.role]?.name || f.role}`, 'role']].filter(Boolean);
-  return `<div class="jf">
+  return `<div class="jf-seg" role="group" aria-label="Company type">
+      <span class="jf-seg-label">Company type</span>
+      <button type="button" class="b-chip${f.seg ? '' : ' on'}" data-j="seg:">All (${all.length})</button>
+      ${SEGMENTS.map(([id, label]) => `<button type="button" class="b-chip${f.seg === id ? ' on' : ''}" data-j="seg:${id}">${esc(label)} (${segCounts.get(id) || 0})</button>`).join('')}
+    </div>
+    <div class="jf-seg" role="group" aria-label="Batch year">
+      <span class="jf-seg-label">Batch</span>
+      <button type="button" class="b-chip${f.batch ? '' : ' on'}" data-j="batch:">Any year</button>
+      <button type="button" class="b-chip${f.batch === '2026' ? ' on' : ''}" data-j="batch:2026">2026 (${batchCounts[2026]})</button>
+      <button type="button" class="b-chip${f.batch === '2027' ? ' on' : ''}" data-j="batch:2027">2027 (${batchCounts[2027]})</button>
+      <button type="button" class="b-chip${f.batch === '20267' ? ' on' : ''}" data-j="batch:20267">2026 + 2027</button>
+    </div>
+    <div class="jf">
       <input id="jQ" class="b-input" type="search" placeholder="Search title, company, skill or city…" value="${esc(f.q)}">
       <select id="jCity" class="b-input">${opt('', `All cities (${all.length})`, f.city)}${JOB_CITIES.filter(c => cities.get(c)).map(c => opt(c, `${c} (${cities.get(c)})`, f.city)).join('')}</select>
       <select id="jTrack" class="b-input">${opt('', 'All role tracks', f.track)}${tracks.map(([t, n]) => opt(t, `${t} (${n})`, f.track)).join('')}</select>
@@ -256,14 +318,20 @@ function jobsTab() {
       ${J.data.firstRun ? '' : `<label class="jf-check"><input type="checkbox" id="jFresh"${f.fresh ? ' checked' : ''}> New today only</label>`}
     </div>
     ${chips.length ? `<div class="jf-chips">${chips.map(([t, k]) => `<span class="tag">${esc(t)} <button class="b-x" data-j="clear:${k}" title="Remove filter">×</button></span>`).join('')}</div>` : ''}
-    <p class="jf-count">Showing <b>${Math.min(list.length, J.limit)}</b> of <b>${list.length}</b> matching openings${list.length !== all.length ? ` (${all.length} in total)` : ''}</p>
+    <p class="jf-count">Showing <b>${Math.min(list.length, J.limit)}</b> of <b>${list.length}</b> matching openings${list.length !== all.length ? ` (${all.length} in total)` : ''}${f.seg ? ` · ${SEG_LABEL[f.seg]}` : ''}${f.batch ? ` · batch ${f.batch === '20267' ? '2026 & 2027' : f.batch}` : ''}</p>
     ${list.length ? `<div class="jb-grid">${list.slice(0, J.limit).map(jobCard).join('')}</div>${list.length > J.limit ? `<div class="jf-more"><button class="chip-btn" data-j="more">Show ${Math.min(60, list.length - J.limit)} more</button></div>` : ''}`
-      : `<div class="b-empty-state">No openings match these filters. Try another city or role track — or search the job sites in the “Search all job sites” tab.</div>`}`;
+      : `<div class="b-empty-state">No openings match these filters. Try another company type, batch year, city or role track — or use the “Search all job sites” tab.</div>`}`;
 }
 function eventsTab() {
   const all = J.data.events, list = filteredEvents(), f = J.ef;
   const types = new Map(); all.forEach(e => types.set(e.type, (types.get(e.type) || 0) + 1));
-  return `<div class="jf">
+  return `<div class="jf-seg" role="group" aria-label="Event batch year">
+      <span class="jf-seg-label">Batch</span>
+      <button type="button" class="b-chip${f.batch ? '' : ' on'}" data-j="ebatch:">Any year</button>
+      <button type="button" class="b-chip${f.batch === '2026' ? ' on' : ''}" data-j="ebatch:2026">2026</button>
+      <button type="button" class="b-chip${f.batch === '2027' ? ' on' : ''}" data-j="ebatch:2027">2027</button>
+    </div>
+    <div class="jf">
       <input id="eQ" class="b-input" type="search" placeholder="Search headlines…" value="${esc(f.q)}">
       <select id="eType" class="b-input">${opt('', `All types (${all.length})`, f.type)}${[...types].sort((a, b) => b[1] - a[1]).map(([t, n]) => opt(t, `${t} (${n})`, f.type)).join('')}</select>
       <label class="jf-check"><input type="checkbox" id="eLinked"${f.linked ? ' checked' : ''}> Only companies in the map</label>
@@ -293,17 +361,17 @@ function sourcesTab() {
       ['Companies tracked daily', `${t.trackedCompanies} of ${S.data.companies.length}`], ['Companies with openings today', `${t.companiesWithJobs}`], ['Fresher / intern openings', `${t.jobs}${d.firstRun ? '' : ` (${t.newToday} new today)`}`],
       ['Drives, internships & hackathons', `${t.events} (last 30 days)`], ['Job aggregators', d.sources.aggregators.length ? esc(d.sources.aggregators.join(', ')) : 'None — add free Adzuna / Jooble API keys as GitHub Actions secrets to include them']])
     + (latestScanFailed() ? note(`Latest scan failed at ${scanStamp(J.status)}. ${esc(J.status.error || 'The previous feed was kept.')}`, true) : '')
-    + `<h3>How it stays up to date</h3>${ul(['The GitHub Action “Daily job scan” runs scripts/update-jobs.js every morning at 08:00 India time (02:30 UTC), writes data/jobs.json and data/scan-status.json, and pushes them. Vercel redeploys the site from that push. Reload the page to see the new feed.',
-      'To run it by hand, open the repository on GitHub → Actions → Daily job scan → Run workflow. Only people who can push to the repository can start it. The run log and the “Last scanned” time above show whether it finished.',
-      'Openings come straight from each company’s official job board (Workday, Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, amazon.jobs, Microsoft and Oracle careers APIs). The same company, title and city — or the same apply link — is kept once.',
-      'Only India-based internships and fresher roles open to 0 years of experience are kept: titles such as Intern, Graduate, Trainee, Associate or Engineer I, and the full job description is read so any opening asking for 1 year or more (or months of experience) is dropped.',
-      'The events tab lists only fresher job drives, internships and hackathons you can apply or register for, found in Google News headlines. Layoffs, results, statistics, winners, opinion pieces and anything asking for experience are left out.',
+    + `<h3>How it stays up to date</h3>${ul(['The GitHub Action “Daily job scan” runs twice a day (≈08:00 and 15:30 IST), scans company career boards + India IT fresher portals, searches Google News for 2026/2027 drives, writes data/jobs.json, and pushes automatically. Vercel redeploys from that push — reload the page to see the new feed.',
+      'Filter openings by company type (Startups, Mid-size, IT services, MNCs, GCCs) and by 2026 / 2027 batch on the Openings tab.',
+      'To run it by hand, open the repository on GitHub → Actions → Daily job scan → Run workflow.',
+      'Openings come from official ATS boards (Greenhouse, Lever, Ashby, Workday, …), curated India IT fresher portals (TCS NQT, Infosys, Wipro GET, Cognizant GenC, …), free public job boards, and Google News drive headlines.',
+      'Only India-based internships and fresher / graduate-trainee roles open to 0 years of experience are kept.',
       'scripts/schedule-daily.ps1 can still refresh a copy on a Windows PC. That local run does not update this website.'])}`
-    + `<h3>Sources in use</h3><div class="chips">${[...bySrc].sort((a, b) => b[1] - a[1]).map(([l, n]) => `<span class="tag">${esc(l)} · ${n}</span>`).join('')}<span class="tag">Google News · events</span></div>`
+    + `<h3>Sources in use</h3><div class="chips">${[...bySrc].sort((a, b) => b[1] - a[1]).map(([l, n]) => `<span class="tag">${esc(l)} · ${n}</span>`).join('')}<span class="tag">Google News · events</span><span class="tag">India IT fresher portals</span></div>`
     + `<h3>Companies tracked daily <span class="muted">${cov.length}</span></h3><div class="cov">${cov.sort((a, b) => b[1].jobs - a[1].jobs).map(([id, v]) => {
-      const c = coOf(id); return `<div class="cov-r"><button class="link-btn" data-j="co:${esc(id)}">${esc(c?.name || id)}</button><span>${v.jobs ? `<b>${v.jobs}</b> open` : '<span class="muted">0 open</span>'}</span>${v.boards[0]?.url ? `<a href="${esc(v.boards[0].url)}" target="_blank" rel="noopener">${esc(v.boards[0].label)} ↗</a>` : `<small>${esc(v.boards[0]?.label || '')}</small>`}</div>`;
+      const c = coOf(id); return `<div class="cov-r"><button class="link-btn" data-j="co:${esc(id)}">${esc(c?.name || id)}</button><span>${v.jobs ? `<b>${v.jobs}</b> open` : '<span class="muted">0 open</span>'}${c ? ` · <small class="muted">${esc(SEG_LABEL[companySegment(c)] || '')}</small>` : ''}</span>${v.boards[0]?.url ? `<a href="${esc(v.boards[0].url)}" target="_blank" rel="noopener">${esc(v.boards[0].label)} ↗</a>` : `<small>${esc(v.boards[0]?.label || '')}</small>`}</div>`;
     }).join('')}</div>`
-    + `<h3>Not readable automatically <span class="muted">${untracked.length}</span></h3><p class="muted">These companies use custom careers sites (for example TCS, Infosys, Wipro, HCLTech, Cognizant, Capgemini and most agencies). Their hiring drives still appear under Events, and every company panel has one-click job-site searches.</p>`
+    + `<h3>Custom careers sites <span class="muted">${untracked.length}</span></h3><p class="muted">Some companies still use custom careers pages. Major India IT fresher portals (TCS, Infosys, Wipro, Cognizant, …) are listed via the portal scraper; others show under Events and in each company panel’s job-site searches.</p>`
     + (d.errors.length ? `<details class="cov-err"><summary>${plural(d.errors.length, 'source')} failed in the last run</summary>${ul(d.errors)}</details>` : '');
 }
 function renderJobs(keepScroll) {
@@ -351,6 +419,9 @@ jobsEl.addEventListener('click', e => {
     case 'tab': J.tab = arg; renderJobs(); return;
     case 'more': J.limit += 60; renderJobs(true); return;
     case 'co': J.f.cid = arg; J.tab = 'jobs'; J.limit = 60; renderJobs(); return;
+    case 'seg': J.f.seg = arg; J.tab = 'jobs'; J.limit = 60; renderJobs(true); return;
+    case 'batch': J.f.batch = arg; J.tab = 'jobs'; J.limit = 60; renderJobs(true); return;
+    case 'ebatch': J.ef.batch = arg; J.tab = 'events'; renderJobs(true); return;
     case 'clear': J.f[arg] = ''; renderJobs(true); return;
     case 'map': closeJobs(); revealKeys(JSON.parse(arg), true); return;
     case 'build': closeJobs(); openBuilder({ role: arg }); return;

@@ -168,6 +168,24 @@ function indiaCity(loc) {
 }
 const MAIN_CITIES = ['Bengaluru', 'Hyderabad', 'Chennai'];
 
+/* Company segment for UI filters: startups · mid-size · IT services · MNCs · GCCs */
+function companySegment(c) {
+  const cats = c?.categories || [];
+  if (cats.some(x => /Startup\s*\/\s*Product/i.test(x))) return 'startup';
+  if (cats.some(x => /\bGCC\b/i.test(x))) return 'gcc';
+  if (cats.some(x => /IT Services/i.test(x))) return 'it';
+  if (cats.some(x => /Agency|Product\s*\/\s*SaaS/i.test(x))) return 'mid';
+  if (cats.some(x => /^MNC/i.test(x))) return 'mnc';
+  return 'mid';
+}
+function batchYears(title, desc) {
+  const t = `${title || ''} ${stripHTML(desc || '')}`;
+  const out = [];
+  if (/\b2026\b/.test(t)) out.push(2026);
+  if (/\b2027\b/.test(t)) out.push(2027);
+  return out;
+}
+
 /* ------------------------------------------------------------------ fresher / intern detection */
 const INTERN_RE = /\b(intern|interns|internship|co-?op|apprentice|apprenticeship|summer analyst|summer associate|industrial training)\b/i;
 const SENIOR_RE = /\b(senior|sr|snr|lead|leader|principal|staff|manager|mgr|director|head|architect|vp|avp|vice president|chief|president|partner|distinguished|fellow|expert|intermediate|intmd|experienced|officer|c1[1-6]|ii|iii|iv|level\s*[2-9]|l[2-9]|ic[3-9]|mts\s*[2-4]|smts|lmts|specialist\s*[2-4]|engineer\s*[2-4]|analyst\s*[2-4]|developer\s*[2-4]|sde\s*-?\s*[2-4])\b/i;
@@ -783,7 +801,8 @@ else (async () => {
 
   function makeJob(c, ats, j, a, desc, companyName) {
     const key = `${ats}:${c ? c.id : norm(companyName)}:${j.id}`;
-    const { track, roles } = trackOf(j.title, stripHTML(desc).slice(0, 400));
+    const plain = stripHTML(desc || '');
+    const { track, roles } = trackOf(j.title, plain.slice(0, 400));
     const city = indiaCity(j.loc);
     const rank = companyRank(c) ?? (megaNames.has(norm(companyName)) ? 9 : 2);
     return {
@@ -791,7 +810,8 @@ else (async () => {
       loc: uniq(String(j.loc).replace(/\(do not use\)/gi, '').split('|').map(s => s.replace(/\s+/g, ' ').trim())).filter(s => s && s !== 'India').slice(0, 3).join(' · ') || 'India',
       city: MAIN_CITIES.includes(city) ? city : city || 'Other India', remote: /remote/i.test(j.loc),
       url: j.url, posted: isoDay(j.posted), source: ATS_LABEL[ats], level: a.level, why: a.why, yrs: a.yrs ?? null,
-      track, roles, kw: jobKeywords(`${j.title} ${stripHTML(desc || '')}`), first: firstSeen.get(key) || today, prefer: rank,
+      track, roles, kw: jobKeywords(`${j.title} ${plain}`), first: firstSeen.get(key) || today, prefer: rank,
+      seg: companySegment(c), batch: batchYears(j.title, plain),
     };
   }
 
@@ -815,12 +835,18 @@ else (async () => {
       if (!it.title || !it.date || it.date < cutoff) return;
       const type = eventType(it.title); if (!type) return;
       const k = norm(it.title).slice(0, 90);
-      const e = found.get(k) || { id: 'e' + found.size, title: it.title, url: it.url, source: it.source, date: it.date, type, cids: [], q };
+      const e = found.get(k) || { id: 'e' + found.size, title: it.title, url: it.url, source: it.source, date: it.date, type, cids: [], q, batch: batchYears(it.title, '') };
       e.cids = uniq([...e.cids, ...cids]);
+      e.batch = uniq([...(e.batch || []), ...batchYears(it.title, '')]);
       found.set(k, e);
     };
+    // Google News: broad 2026/2027 fresher discovery + every mapped company.
     const queries = [
       ...(sources.generalNews || []).map(q => ({ q: q + ' when:14d' })),
+      { q: `("2026 batch" OR "2027 batch" OR "batch of 2026" OR "batch of 2027") (fresher OR "off campus" OR "graduate trainee" OR GET OR GenC OR NQT) (apply OR registration OR hiring) India when:14d` },
+      { q: `(startup OR "product company" OR SaaS) (fresher OR "graduate trainee" OR "off campus") (hiring OR apply) India 2026 OR 2027 when:14d` },
+      { q: `(GCC OR "global capability center" OR "captive center") (fresher OR graduate OR trainee OR intern) (hiring OR apply) India when:14d` },
+      { q: `(MNC OR "IT services" OR TCS OR Infosys OR Wipro OR Cognizant OR HCLTech) (fresher OR "off campus" OR GET OR GenC) (apply OR registration) 2026 OR 2027 when:14d` },
       ...companies.map(c => ({ c, q: `${sources.newsAliases?.[c.name] ? `(${sources.newsAliases[c.name]})` : `"${newsName(c)}"`} (freshers OR "off campus" OR internship OR hackathon OR "walk-in" OR "graduate trainee" OR "recruitment drive" OR "hiring drive" OR "2026 batch" OR "2027 batch") when:${EVENT_MAX_AGE_DAYS}d` })),
     ];
     let failed = 0;
