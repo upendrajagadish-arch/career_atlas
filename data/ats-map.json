@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-21T03:39:54.241Z",
+ "generatedAt": "2026-11-28T10:57:27.521Z",
  "boards": {
   "adp": [],
   "adlift": [],
@@ -10,8 +10,8 @@
    {
     "ats": "greenhouse",
     "slug": "6sense",
-    "india": 9,
-    "total": 35
+    "india": 11,
+    "total": 36
    }
   ],
   "airbnb": [
@@ -19,7 +19,7 @@
     "ats": "greenhouse",
     "slug": "airbnb",
     "india": 12,
-    "total": 202
+    "total": 200
    }
   ],
   "abcconsultants": [],
@@ -30,8 +30,8 @@
    {
     "ats": "workable",
     "slug": "apna",
-    "india": 127,
-    "total": 158
+    "india": 125,
+    "total": 156
    }
   ],
   "adeccoindia": [],
@@ -84,8 +84,8 @@
    {
     "ats": "smartrecruiters",
     "slug": "continental",
-    "india": 9,
-    "total": 13
+    "india": 10,
+    "total": 15
    }
   ],
   "ceslimited": [],
@@ -93,8 +93,8 @@
    {
     "ats": "lever",
     "slug": "cred",
-    "india": 11,
-    "total": 11
+    "india": 10,
+    "total": 10
    }
   ],
   "credright": [],
@@ -116,8 +116,8 @@
    {
     "ats": "greenhouse",
     "slug": "databricks",
-    "india": 73,
-    "total": 897
+    "india": 56,
+    "total": 889
    }
   ],
   "dunzo": [],
@@ -152,7 +152,7 @@
    {
     "ats": "greenhouse",
     "slug": "fourkites",
-    "india": 4,
+    "india": 5,
     "total": 11
    }
   ],
@@ -179,16 +179,16 @@
    {
     "ats": "greenhouse",
     "slug": "glance",
-    "india": 14,
-    "total": 26
+    "india": 11,
+    "total": 21
    }
   ],
   "fullcreative": [
    {
     "ats": "recruitee",
     "slug": "fullcreative",
-    "india": 6,
-    "total": 6
+    "india": 5,
+    "total": 5
    }
   ],
   "gofrugal": [],
@@ -216,8 +216,8 @@
    {
     "ats": "greenhouse",
     "slug": "highradius",
-    "india": 41,
-    "total": 64
+    "india": 40,
+    "total": 63
    }
   ],
   "honeywell": [],
@@ -231,8 +231,8 @@
    {
     "ats": "lever",
     "slug": "hevodata",
-    "india": 39,
-    "total": 40
+    "india": 41,
+    "total": 42
    }
   ],
   "hakunamatatasolutions": [],
@@ -246,8 +246,8 @@
    {
     "ats": "greenhouse",
     "slug": "inmobi",
-    "india": 43,
-    "total": 75
+    "india": 35,
+    "total": 63
    }
   ],
   "inovies": [],
@@ -313,8 +313,8 @@
    {
     "ats": "lever",
     "slug": "meesho",
-    "india": 47,
-    "total": 48
+    "india": 62,
+    "total": 63
    }
   ],
   "lynklogistics": [],
@@ -325,7 +325,7 @@
     "ats": "lever",
     "slug": "mindtickle",
     "india": 16,
-    "total": 19
+    "total": 17
    },
    {
     "ats": "smartrecruiters",
@@ -361,6 +361,12 @@
     "slug": "observeai",
     "india": 5,
     "total": 10
+   },
+   {
+    "ats": "bamboo",
+    "slug": "observeai",
+    "india": 1,
+    "total": 1
    }
   ],
   "nammayatri": [],
@@ -381,8 +387,8 @@
    {
     "ats": "lever",
     "slug": "portcast",
-    "india": 7,
-    "total": 9
+    "india": 5,
+    "total": 7
    }
   ],
   "pidatacenters": [],
@@ -401,7 +407,7 @@
     "ats": "lever",
     "slug": "pocketfm",
     "india": 2,
-    "total": 10
+    "total": 14
    }
   ],
   "prodapt": [],
@@ -445,8 +451,8 @@
    {
     "ats": "ashby",
     "slug": "sarvam",
-    "india": 43,
-    "total": 43
+    "india": 35,
+    "total": 35
    }
   ],
   "signoz": [],
@@ -462,7 +468,7 @@
     "ats": "ashby",
     "slug": "snowflake",
     "india": 12,
-    "total": 374
+    "total": 380
    }
   ],
   "sidsfarm": [],
@@ -483,8 +489,8 @@
    {
     "ats": "smartrecruiters",
     "slug": "sutherland",
-    "india": 51,
-    "total": 52
+    "india": 50,
+    "total": 51
    }
   ],
   "socitgnraleglobalsolutioncentre": [],
@@ -493,8 +499,8 @@
    {
     "ats": "smartrecruiters",
     "slug": "swiggy",
-    "india": 109,
-    "total": 173
+    "india": 92,
+    "total": 151
    }
   ],
   "teamlease": [],
@@ -515,8 +521,8 @@
    {
     "ats": "ashby",
     "slug": "tekion",
-    "india": 65,
-    "total": 92
+    "india": 59,
+    "total": 86
    }
   ],
   "tenable": [],
@@ -527,7 +533,7 @@
     "ats": "ashby",
     "slug": "thoughtworks",
     "india": 1,
-    "total": 21
+    "total": 31
    }
   ],
   "tripledart": [],
@@ -589,8 +595,8 @@
    {
     "ats": "lever",
     "slug": "veeva",
-    "india": 24,
-    "total": 860
+    "india": 25,
+    "total": 865
    }
   ],
   "wipro": [],
@@ -601,8 +607,8 @@
    {
     "ats": "greenhouse",
     "slug": "zenoti",
-    "india": 34,
-    "total": 56
+    "india": 29,
+    "total": 49
    }
   ],
   "zenwork": [],
@@ -615,16 +621,16 @@
    {
     "ats": "smartrecruiters",
     "slug": "westerndigital",
-    "india": 1,
-    "total": 1
+    "india": 4,
+    "total": 4
    }
   ],
   "wppmedia": [
    {
     "ats": "greenhouse",
     "slug": "wppmedia",
-    "india": 60,
-    "total": 767
+    "india": 59,
+    "total": 759
    }
   ],
   "zoho": [],
@@ -633,8 +639,8 @@
    {
     "ats": "lever",
     "slug": "zeta",
-    "india": 29,
-    "total": 33
+    "india": 34,
+    "total": 38
    }
   ],
   "zuper": [],
